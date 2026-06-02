@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model nguoidung {
+  idNguoiDung    Int               @id @default(autoincrement())
+  hoTen          String
+  taiKhoan       String            @unique
+  matKhau        String
+  trangThai      Boolean
+  email          String
+  vaiTro         nguoidung_vaiTro? @default(hocvien)
+
+  dangky_khoahoc dangky_khoahoc[]
+  khoahoc        khoahoc[]
+  progress       progress[]
+  quiz_results   quiz_results[]
+  submissions    submissions[]
+  comments       comments[]
+  group_members  group_members[]
+  messages       messages[]
+  announcements  announcements[] 
+}
+
+enum nguoidung_vaiTro {
+  hocvien
+  giangvien
+  admin
+}
+
+model khoahoc {
+  idKhoaHoc      Int              @id @default(autoincrement())
+  tenKhoaHoc     String
+  code           String           @unique
+  moTa           String?
+  danhMuc        String?
+  trangThai      Boolean
+  idGiangVien    Int?
+  ngayTao        DateTime?        @default(now())
+
+  nguoidung      nguoidung?       @relation(fields: [idGiangVien], references: [idNguoiDung])
+  baihoc         baihoc[]
+  dangky_khoahoc dangky_khoahoc[]
+  progress       progress[]
+  quizzes        quizzes[]
+  assignments    assignments[]
+  announcements  announcements[]
+  groups         groups[]
+
+  @@index([idGiangVien])
+}
+
+model dangky_khoahoc {
+  idDangKy    Int       @id @default(autoincrement())
+  idNguoiDung Int
+  idKhoaHoc   Int
+  ngayDangKy  DateTime? @default(now())
+
+  khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc])
+  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
+
+  @@unique([idNguoiDung, idKhoaHoc])
+}
+
+model baihoc {
+  idBaiHoc   Int     @id @default(autoincrement())
+  idKhoaHoc  Int
+  tenBaiHoc  String
+  videoUrl   String?
+  taiLieuUrl String?
+  thuTu      Int?
+
+  khoahoc khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  progress progress[]
+  comments comments[]
+
+  @@index([idKhoaHoc])
+}
+
+model comments {
+  idComment    Int      @id @default(autoincrement())
+  idBaiHoc     Int
+  idNguoiDung  Int
+  noiDung      String
+  ngayTao      DateTime @default(now())
+  parentId     Int?
+
+  baihoc    baihoc    @relation(fields: [idBaiHoc], references: [idBaiHoc], onDelete: Cascade)
+  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+
+  parent   comments?  @relation("CommentReply", fields: [parentId], references: [idComment])
+  replies  comments[] @relation("CommentReply")
+
+  @@index([idBaiHoc])
+}
+
+model progress {
+  idProgress  Int                 @id @default(autoincrement())
+  idNguoiDung Int
+  idKhoaHoc   Int
+  idBaiHoc    Int
+  trangThai   progress_trangThai? @default(chua_hoc)
+  thoiGianHoc Int?                @default(0)
+
+  baihoc    baihoc    @relation(fields: [idBaiHoc], references: [idBaiHoc], onDelete: Cascade)
+  khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+
+  @@index([idNguoiDung])
+}
+
+enum progress_trangThai {
+  chua_hoc
+  dang_hoc
+  hoan_thanh
+}
+
+model quizzes {
+  idQuiz         Int    @id @default(autoincrement())
+  idKhoaHoc      Int
+  tenQuiz        String
+  thoiGianLamBai Int?
+  ngayTao        DateTime  @default(now())
+  ngayDenHan     DateTime?
+
+  khoahoc khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  questions quiz_questions[]
+  results   quiz_results[]
+
+  @@index([idKhoaHoc])
+}
+
+model quiz_questions {
+  idCauHoi   Int    @id @default(autoincrement())
+  idQuiz     Int
+  cauHoi     String
+  diemCauHoi Float  @default(1)
+
+  quizzes quizzes @relation(fields: [idQuiz], references: [idQuiz], onDelete: Cascade)
+  answers quiz_answers[]
+}
+
+model quiz_answers {
+  idDapAn  Int     @id @default(autoincrement())
+  idCauHoi Int
+  noiDung  String
+  laDung   Boolean
+
+  question quiz_questions @relation(fields: [idCauHoi], references: [idCauHoi], onDelete: Cascade)
+}
+
+model quiz_results {
+  idKetQua       Int       @id @default(autoincrement())
+  idNguoiDung    Int
+  idQuiz         Int
+  diemSo         Float?
+  thoiGianLamBai Int?
+  ngayLamBai     DateTime? @default(now())
+
+  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+  quizzes   quizzes   @relation(fields: [idQuiz], references: [idQuiz])
+}
+
+model assignments {
+  idAssignment Int      @id @default(autoincrement())
+  idKhoaHoc    Int
+  tieuDe       String
+  moTa         String?
+  fileDinhKem  String?
+  hanNop       DateTime
+  ngayTao      DateTime @default(now())
+
+  khoahoc khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  submissions submissions[]
+
+  @@index([idKhoaHoc])
+}
+
+model submissions {
+  idSubmission  Int      @id @default(autoincrement())
+  idAssignment  Int
+  idNguoiDung   Int
+  fileNop       String?
+  noiDung       String?
+  ngayNop       DateTime @default(now())
+
+  assignment assignments @relation(fields: [idAssignment], references: [idAssignment], onDelete: Cascade)
+  nguoidung nguoidung   @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+  grades grades[]
+
+  @@index([idAssignment, idNguoiDung])
+  @@unique([idAssignment, idNguoiDung])
+}
+
+model grades {
+  idGrade      Int      @id @default(autoincrement())
+  idSubmission Int
+  diem         Float
+  nhanXet      String?
+  ngayCham     DateTime @default(now())
+
+  submission submissions @relation(fields: [idSubmission], references: [idSubmission], onDelete: Cascade)
+}
+
+model announcements {
+  idThongBao Int      @id @default(autoincrement())
+  idKhoaHoc  Int?     
+  idNguoiDang Int
+  tieuDe     String
+  noiDung    String
+  ngayTao    DateTime @default(now())
+
+  khoahoc khoahoc? @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  nguoiDang  nguoidung @relation(fields: [idNguoiDang], references: [idNguoiDung])
+
+  @@index([idKhoaHoc])
+  @@index([idNguoiDang])
+}
+
+model groups {
+  idGroup   Int      @id @default(autoincrement())
+  idKhoaHoc Int
+  tenNhom   String
+  moTa      String?
+  ngayTao   DateTime @default(now())
+
+  khoahoc khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  members group_members[]
+  messages messages[]
+}
+
+model group_members {
+  id           Int @id @default(autoincrement())
+  idGroup      Int
+  idNguoiDung  Int
+  vaiTroNhom   String?
+
+  group groups @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
+  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+
+  @@unique([idGroup, idNguoiDung])
+}
+
+model messages {
+  idMessage   Int      @id @default(autoincrement())
+  idGroup     Int
+  idNguoiDung Int
+  noiDung     String
+  thoiGian    DateTime @default(now())
+
+  group groups @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
+  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
+}
