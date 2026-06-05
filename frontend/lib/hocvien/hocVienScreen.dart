@@ -39,12 +39,12 @@ class _HocVienScreenState extends State<HocVienScreen> {
   Future<void> fetchDSLopHoc() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final response = await http.get(
         Uri.parse(apiUrl),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId != null ? userId.toString() : "",
+          "Authorization": "Bearer $token",
         },
       );
       if (response.statusCode == 200) {
@@ -79,18 +79,12 @@ class _HocVienScreenState extends State<HocVienScreen> {
   Future<void> thamGiaLopHoc(String codeLopHoc) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Không tìm thấy người dùng")),
-        );
-        return;
-      }
+      final token = prefs.getString("token");
       final response = await http.post(
         Uri.parse('$apiUrl/thamgia'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
         body: json.encode({"codeLop": codeLopHoc.trim()}),
       );
@@ -151,18 +145,12 @@ class _HocVienScreenState extends State<HocVienScreen> {
   Future<void> roiLopHoc(int idKhoaHoc) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Không tìm thấy người dùng")),
-        );
-        return;
-      }
+      final token = prefs.getString("token");
       final response = await http.delete(
         Uri.parse('$apiUrl/roilop'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
         body: json.encode({"idKhoaHoc": idKhoaHoc}),
       );

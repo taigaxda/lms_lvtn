@@ -84,7 +84,6 @@ router.post('/', checkAdmin, async (req, res) => {
     const existing = await prisma.nguoidung.findUnique({
       where: { taiKhoan }
     })
-
     if (existing) {
       return res.status(409).json({
         success: false,

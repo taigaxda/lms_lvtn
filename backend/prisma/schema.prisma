@@ -26,6 +26,7 @@ model nguoidung {
   group_members  group_members[]
   messages       messages[]
   announcements  announcements[] 
+  fcm_tokens     fcm_tokens[]
 }
 
 enum nguoidung_vaiTro {
@@ -256,4 +257,12 @@ model messages {
 
   group groups @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
+}
+
+model fcm_tokens {
+  id           Int      @id @default(autoincrement())
+  idNguoiDung  Int
+  token        String   @unique
+
+  nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
 }

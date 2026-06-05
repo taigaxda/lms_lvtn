@@ -67,13 +67,13 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
 
   Future<void> loadChiTietLopHoc() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
 
     final res = await http.get(
       Uri.parse('$apiUrl/lophoc/${widget.idKhoaHoc}'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
     );
 
@@ -84,13 +84,13 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
 
   Future<void> loadBaiHoc() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
 
     final res = await http.get(
       Uri.parse('$apiUrl/baihoc/${widget.idKhoaHoc}'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
     );
 

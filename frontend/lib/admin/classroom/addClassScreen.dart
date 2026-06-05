@@ -41,8 +41,7 @@ class _AddClassScreenState extends State<AddClassScreen> {
       final data = jsonDecode(response.body);
 
       setState(() {
-        giangViens =
-            data.where((u) => u['vaiTro'] == 'giangvien').toList();
+        giangViens = data.where((u) => u['vaiTro'] == 'giangvien').toList();
       });
     }
   }

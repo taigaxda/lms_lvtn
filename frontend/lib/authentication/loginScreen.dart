@@ -21,9 +21,9 @@ class _LoginscreenState extends State<Loginscreen> {
   final String apiUrl = "${ApiConfig.baseUrl}/auth/login";
 
   final List<Map<String, String>> taiKhoanMau = [
-    {"taiKhoan": "danhlcjwt", "matKhau": "2912004"},
-    {"taiKhoan": "danhhv", "matKhau": "123456"},
-    {"taiKhoan": "aaa", "matKhau": "123"},
+    {"taiKhoan": "danhlcjwt", "matKhau": "29122004"},
+    {"taiKhoan": "danhhv", "matKhau": "291204"},
+    {"taiKhoan": "danhgv", "matKhau": "291204"},
   ];
 
   String? selectedUser;
