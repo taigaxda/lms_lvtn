@@ -64,8 +64,10 @@ router.post('/upload-file/:idBaiHoc', checkGiangVien, upload.single('taiLieu'), 
 
         if (["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) {
             updateData.videoUrl = secureUrl;
+            updateData.taiLieuUrl = null;
         } else {
             updateData.taiLieuUrl = secureUrl;
+            updateData.videoUrl = null;
         }
 
         await prisma.baihoc.update({
@@ -174,6 +176,56 @@ router.delete('/:idBaiHoc',checkGiangVien,async(req,res)=>{
         });
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
+    }
+})
+
+router.put('/:idBaiHoc',checkGiangVien,async(req,res)=>{
+    try{
+        const idBaiHoc =parseInt(req.params.idBaiHoc);
+        const idGiangVien = req.user.idNguoiDung;
+        let{tenBaiHoc, thuTu} = req.body;
+        if (isNaN(idBaiHoc)) {
+            return res.status(400).json({
+                success: false,
+                message: "ID bài học không hợp lệ"
+            });
+        }
+        const baiHoc = await prisma.baihoc.findFirst({
+            where:{
+                idBaiHoc: idBaiHoc,
+                khoahoc: {
+                    idGiangVien: idGiangVien
+                }
+            }
+        });
+        if(!baiHoc){
+            return res.status(403).json({
+                success: false,
+                message: "Không có quyền hoặc không tồn tại bài học"
+            })
+        }
+        const updateData = {};
+        if(tenBaiHoc){
+            updateData.tenBaiHoc = tenBaiHoc.trim();
+        }
+        if(thuTu){
+            updateData.thuTu = parseInt(thuTu);
+        }
+        await prisma.baihoc.update({
+            where:{
+                idBaiHoc: idBaiHoc
+            },
+            data: updateData
+        })
+        return res.json({
+            success: true,
+            message: "Cập nhật thành công"
+        })
+    }catch(error){
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        })
     }
 })
 

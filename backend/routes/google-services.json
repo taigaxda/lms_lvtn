@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "548732878858",
+    "project_id": "lms-flutter-19720",
+    "storage_bucket": "lms-flutter-19720.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548732878858:android:0f9a60ac0bf15c37c59ff3",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABKe_lSoCKnGIcSMm9n7sY63O16u0WX2M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

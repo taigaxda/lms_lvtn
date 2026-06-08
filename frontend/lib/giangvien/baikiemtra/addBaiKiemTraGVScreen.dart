@@ -17,8 +17,7 @@ class AddBaiKiemTraGVScreen extends StatefulWidget {
   });
 
   @override
-  State<AddBaiKiemTraGVScreen> createState() =>
-      _AddBaiKiemTraGVScreenState();
+  State<AddBaiKiemTraGVScreen> createState() =>_AddBaiKiemTraGVScreenState();
 }
 
 class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {

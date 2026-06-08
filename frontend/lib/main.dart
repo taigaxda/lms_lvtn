@@ -14,6 +14,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await setupFCM();
   runApp(const MyApp());
 }
 
@@ -29,7 +30,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    setupFCM();
     return MaterialApp(
       title: 'LMS',
       debugShowCheckedModeBanner: false,

@@ -38,12 +38,12 @@ class _LopHocLuuTruHVScreenState extends State<LopHocLuuTruHVScreen> {
   Future<void> fetchClasses() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final response = await http.get(
         Uri.parse(apiUrl),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId != null ? userId.toString() : "",
+          "Authorization": "Bearer $token",
         },
       );
       if (response.statusCode == 200) {

@@ -30,13 +30,13 @@ class _DanhsachbaiktscreenState extends State<Danhsachbaiktscreen> {
 
   Future<void> loadQuiz() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
 
     final res = await http.get(
       Uri.parse('$apiUrl/quiz/dsquiz/${widget.idKhoaHoc}'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
     );
     if (res.statusCode == 200) {

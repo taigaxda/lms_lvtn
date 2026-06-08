@@ -10,52 +10,101 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// export const uploadToCloudinary = async (file) => {
+//     if (!file || !file.path) {
+//         throw new Error("Dữ liệu file không hợp lệ");
+//     }
+
+//     try {
+//         const originalName = file.originalname.split('.').slice(0, -1).join('.');
+//         const extension = file.originalname.split('.').pop();
+
+//         const result = await cloudinary.uploader.upload(file.path, {
+//             resource_type: "auto",
+//             folder: "LMS_Project",
+//             public_id: `${originalName}.${extension}`, 
+//             use_filename: true,
+//             unique_filename: false,
+//         });
+
+//         return result.secure_url;
+
+//     } catch (error) {
+//         console.error("Cloudinary Error:", error.message);
+//         throw error;
+//     } finally {
+//         if (fs.existsSync(file.path)) {
+//             try {
+//                 fs.unlinkSync(file.path);
+//                 console.log("Đã dọn dẹp file tạm.");
+//             } catch (err) {
+//                 console.error("Lỗi xóa file tạm:", err);
+//             }
+//         }
+//     }
+// };
+
+// export const uploadToCloudinary = async (file) => {
+//     if (!file || !file.path) {
+//         throw new Error("Dữ liệu file không hợp lệ");
+//     }
+
+//     try {
+//         const originalName = file.originalname.split('.').slice(0, -1).join('.');
+//         const result = await cloudinary.uploader.upload(file.path, {
+//             resource_type: "auto", 
+//             folder: "LMS_Project",
+//             public_id: originalName, 
+//             use_filename: true,
+//             unique_filename: false,
+//         });
+//         return result.secure_url;
+
+//     } catch (error) {
+//         console.error("Cloudinary Error:", error.message);
+//         throw error;
+//     } finally {
+//         if (fs.existsSync(file.path)) {
+//             try {
+//                 fs.unlinkSync(file.path);
+//                 console.log("Đã dọn dẹp file tạm.");
+//             } catch (err) {
+//                 console.error("Lỗi xóa file tạm:", err);
+//             }
+//         }
+//     }
+// };
+
 export const uploadToCloudinary = async (file) => {
-    if (!file || !file.path) {
-        throw new Error("Dữ liệu file không hợp lệ");
-    }
-
     try {
-        // const result = await cloudinary.uploader.upload(file.path, {
-        //     resource_type: "auto",
-        //     folder: "LMS_Project",
-        //     public_id: file.originalname.split('.')[0],
-        //     use_filename: true,
-        //     unique_filename: true,
-        // });
-
-        // console.log(`✅ Cloudinary Upload Success: ${result.secure_url}`);
-
-        // return result.secure_url;
-        // Tách lấy tên file không bao gồm đuôi để làm public_id
-        // Lấy tên file gốc bỏ đuôi
         const originalName = file.originalname.split('.').slice(0, -1).join('.');
-        // Lấy đuôi file (pdf, docx, ...)
-        const extension = file.originalname.split('.').pop();
+        const extension = file.originalname.split('.').pop().toLowerCase();
+
+        // Kiểm tra xem có phải file PDF không
+        const isPDF = extension === 'pdf';
 
         const result = await cloudinary.uploader.upload(file.path, {
-            resource_type: "auto",
+            // "auto" sẽ tự nhận diện PDF là "image", còn Word/Excel là "raw"
+            resource_type: "auto", 
             folder: "LMS_Project",
-            // Quan trọng: Kết hợp tên gốc + đuôi để Cloudinary tạo Link có đuôi
-            public_id: `${originalName}.${extension}`, 
+            
+            // LOGIC QUAN TRỌNG TẠI ĐÂY:
+            // - Nếu là PDF: Chỉ gửi tên "abc" (Cloudinary tự thêm .pdf)
+            // - Nếu là file khác: Phải gửi "abc.docx" (để không bị mất đuôi)
+            public_id: isPDF ? originalName : file.originalname,
+            
             use_filename: true,
-            unique_filename: false, // Để false nếu bạn muốn link đẹp cố định
+            unique_filename: false,
         });
 
         return result.secure_url;
 
     } catch (error) {
-        console.error("❌ Cloudinary Error:", error.message);
+        console.error("Lỗi:", error);
         throw error;
     } finally {
-        // Xóa file tạm trong thư mục uploads/ sau khi upload xong
         if (fs.existsSync(file.path)) {
-            try {
-                fs.unlinkSync(file.path);
-                console.log("Đã dọn dẹp file tạm.");
-            } catch (err) {
-                console.error("Lỗi xóa file tạm:", err);
-            }
+            fs.unlinkSync(file.path);
         }
     }
 };

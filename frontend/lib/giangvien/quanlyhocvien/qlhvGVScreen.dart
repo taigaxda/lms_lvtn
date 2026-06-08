@@ -27,13 +27,13 @@ class _QlhvGVScreenState extends State<QlhvGVScreen> {
     setState(() => isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
 
       final res = await http.get(
         Uri.parse('$apiUrl/${widget.idKhoaHoc}'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -51,13 +51,13 @@ class _QlhvGVScreenState extends State<QlhvGVScreen> {
   Future<void> deleteHocVien(int idNguoiDung) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
 
       final res = await http.delete(
         Uri.parse('$apiUrl/kick/${widget.idKhoaHoc}/$idNguoiDung'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
       );
 

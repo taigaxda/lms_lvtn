@@ -39,12 +39,12 @@ class _LopHocLuuTruGVScreenState extends State<LopHocLuuTruGVScreen> {
   Future<void> fetchClasses() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final response = await http.get(
         Uri.parse(apiUrl),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId != null ? userId.toString() : "",
+          "Authorization": "Bearer $token",
         },
       );
       if (response.statusCode == 200) {
@@ -67,12 +67,12 @@ class _LopHocLuuTruGVScreenState extends State<LopHocLuuTruGVScreen> {
   Future<void> deleteClass(int idKhoaHoc) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final response = await http.delete(
         Uri.parse('$apiUrl/$idKhoaHoc'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId != null ? userId.toString() : "",
+          "Authorization": "Bearer $token",
         },
       );
       if (response.statusCode == 200) {

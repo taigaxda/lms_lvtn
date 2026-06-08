@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/authentication/dangKyScreen.dart';
 import 'package:frontend/api.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
@@ -27,6 +28,26 @@ class _LoginscreenState extends State<Loginscreen> {
   ];
 
   String? selectedUser;
+
+  Future<void> guiFCMToken(int idNguoiDung) async{
+    try{
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if(fcmToken == null){
+        return;
+      }
+      await http.post(Uri.parse("${ApiConfig.baseUrl}/auth/luu-fcm-token"),
+        headers: {"Content-Type": "application/json"},
+        body:jsonEncode({
+          "idNguoiDung": idNguoiDung,
+          "token": fcmToken
+        }),
+      );
+      print("Đã gửi FCM token");
+    }
+    catch(e){
+      print("Lỗi gửi FCM token: $e");
+    }
+  }
 
   Future<void> dangNhap() async {
     setState(() {
@@ -53,6 +74,7 @@ class _LoginscreenState extends State<Loginscreen> {
         await prefs.setInt("userId", user["id"]);
         await prefs.setString("hoTen", user["hoTen"]);
         await prefs.setString("vaiTro", user["vaiTro"]);
+        await guiFCMToken(user["id"]);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Chào ${user["hoTen"]} 👋")),

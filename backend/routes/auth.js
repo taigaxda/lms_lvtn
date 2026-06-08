@@ -152,4 +152,36 @@ router.post("/dangky", async (req, res) => {
     }
 })
 
+router.post("/luu-fcm-token", async(req, res)=>{
+    try{
+        const {idNguoiDung, token} = req.body
+        if(!idNguoiDung||!token){
+            return res.status(400).json({
+                success: false,
+                message:"Thiếu id ngdung hoặc token"
+            })
+        }
+        const result = await prisma.fcm_tokens.upsert({
+            where:{
+                token: token
+            },
+            update: {
+                idNguoiDung: idNguoiDung
+            },
+            create:{
+                idNguoiDung: idNguoiDung,
+                token: token
+            }
+        })
+        res.json({
+            success: true,
+            message: "Lưu FCMToken thành công"
+        })
+    }
+    catch(error){
+        console.error("Lỗi lưu FCM token:", error)
+        res.status(500).json({ success: false, message: "Không thể lưu FCM token" })
+    }
+})
+
 export default router

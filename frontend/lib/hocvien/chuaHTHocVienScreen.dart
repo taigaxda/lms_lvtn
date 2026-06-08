@@ -49,13 +49,13 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
   Future<void> fetchData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
 
       final resBaiHoc = await http.get(
         Uri.parse(apiBaiHoc),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId?.toString() ?? "",
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -63,7 +63,7 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
         Uri.parse(apiQuiz),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId?.toString() ?? "",
+          "Authorization": "Bearer $token",
         },
       );
 

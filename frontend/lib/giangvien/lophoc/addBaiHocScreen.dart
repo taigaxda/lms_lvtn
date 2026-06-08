@@ -10,7 +10,8 @@ import 'package:frontend/giangvien/menuUI/giangVienMenuBar.dart';
 
 class Addbaihocscreen extends StatefulWidget {
   final int idKhoaHoc;
-  const Addbaihocscreen({super.key, required this.idKhoaHoc});
+  final Map<String, dynamic>? baiHoc;
+  const Addbaihocscreen({super.key, required this.idKhoaHoc, this.baiHoc});
 
   @override
   State<Addbaihocscreen> createState() => _Addbaihocscreen();
@@ -26,6 +27,7 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
   bool isLoading = false;
   String hoTen = "";
   String vaiTro = "";
+  bool get isEdit => widget.baiHoc != null;
 
   final String apiUrl = "${ApiConfig.baseUrl}/giangvien/baihoc";
 
@@ -33,6 +35,10 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
   void initState() {
     super.initState();
     loadUserInfo();
+    if (widget.baiHoc != null) {
+      tenController.text = widget.baiHoc!['tenBaiHoc'] ?? "";
+      thuTuController.text = widget.baiHoc!['thuTu']?.toString() ?? "";
+    }
   }
 
   Future<void> loadUserInfo() async {
@@ -80,30 +86,49 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
       return;
     }
 
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+    });
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
-
-      final res = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
-        },
-        body: jsonEncode({
-          "idKhoaHoc": widget.idKhoaHoc,
-          "tenBaiHoc": tenController.text.trim(),
-          "thuTu": int.tryParse(thuTuController.text) ?? 1,
-        }),
-      );
-
-      if (res.statusCode != 201) {
-        throw Exception("Tạo bài học thất bại");
+      final token = prefs.getString("token");
+      http.Response res;
+      int idBaiHoc;
+      if (!isEdit) {
+        res = await http.post(
+          Uri.parse(apiUrl),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode({
+            "idKhoaHoc": widget.idKhoaHoc,
+            "tenBaiHoc": tenController.text.trim(),
+            "thuTu": int.tryParse(thuTuController.text) ?? 1,
+          }),
+        );
+        if (res.statusCode != 201) {
+          throw Exception("Tạo bài học thất bại");
+        }
+        idBaiHoc = json.decode(res.body)['idBaiHoc'];
+      } else {
+        idBaiHoc = widget.baiHoc!['idBaiHoc'];
+        res = await http.put(
+          Uri.parse("$apiUrl/$idBaiHoc"),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode({
+            "tenBaiHoc": tenController.text.trim(),
+            "thuTu": int.tryParse(thuTuController.text) ?? 1,
+          }),
+        );
+        if (res.statusCode != 200) {
+          throw Exception("Cập nhật bài học thất bại");
+        }
       }
-
-      final idBaiHoc = json.decode(res.body)['idBaiHoc'];
 
       if (pickedFile != null || selectedFile != null) {
         var request = http.MultipartRequest(
@@ -111,7 +136,7 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
           Uri.parse('$apiUrl/upload-file/$idBaiHoc'),
         );
 
-        request.headers["x-user-id"] = userId.toString();
+        request.headers["Authorization"] = "Bearer $token";
 
         if (kIsWeb && pickedFile != null) {
           request.files.add(
@@ -134,9 +159,13 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
         }
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Thêm bài học thành công")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEdit ? "Cập nhật bài học thành công" : "Thêm bài học thành công",
+          ),
+        ),
+      );
 
       Navigator.pop(context, true);
     } catch (e) {
@@ -146,10 +175,23 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
       ).showSnackBar(const SnackBar(content: Text("Có lỗi xảy ra")));
     }
 
-    setState(() => isLoading = false);
+    setState(() {
+      isLoading = false;
+    });
   }
 
   Widget filePreview() {
+    if (isEdit && pickedFile == null && selectedFile == null) {
+      final fileCu = widget.baiHoc!['taiLieu'];
+
+      if (fileCu != null) {
+        return ListTile(
+          leading: const Icon(Icons.insert_drive_file),
+          title: Text(fileCu),
+          subtitle: const Text("File hiện tại"),
+        );
+      }
+    }
     if (pickedFile == null && selectedFile == null) {
       return const SizedBox();
     }
@@ -174,8 +216,8 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Thêm bài học",
+        title: Text(
+          isEdit ? "Sửa bài học" : "Thêm bài học",
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.blue,
@@ -229,7 +271,7 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             side: const BorderSide(color: Colors.grey),
-                            backgroundColor: Colors.red
+                            backgroundColor: Colors.red,
                           ),
                           child: const Text(
                             "Hủy / Quay lại",
@@ -243,9 +285,12 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
                           onPressed: submit,
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 15),
-                            backgroundColor: Colors.blue
+                            backgroundColor: Colors.blue,
                           ),
-                          child: const Text("Tạo bài học",style: TextStyle(color: Colors.white),),
+                          child: Text(
+                            isEdit ? "Cập nhật bài học" : "Tạo bài học",
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ),
                     ],

@@ -64,7 +64,9 @@ class _HocBaiScreenState extends State<HocBaiScreen> {
       _controller!.addListener(() {
         final position = _controller!.value.position;
         final duration = _controller!.value.duration;
-        if (!daBaoHoanThanh && duration.inSeconds > 0 && position.inSeconds >= duration.inSeconds - 1) {
+        if (!daBaoHoanThanh &&
+            duration.inSeconds > 0 &&
+            position.inSeconds >= duration.inSeconds - 1) {
           daBaoHoanThanh = true;
           hocBai("hoan_thanh");
         }
@@ -100,14 +102,53 @@ class _HocBaiScreenState extends State<HocBaiScreen> {
     );
   }
 
+  // Future<void> openTaiLieu(String url) async {
+  //   if (url.isEmpty) return;
+  //   String downloadUrl = url;
+  //   if (url.contains("upload/")) {
+  //     downloadUrl = url.replaceFirst("upload/", "upload/fl_attachment/");
+  //   }
+  //   final Uri uri = Uri.parse(downloadUrl);
+  //   await launchUrl(uri, mode: LaunchMode.externalApplication);
+  // }
+
   Future<void> openTaiLieu(String url) async {
     if (url.isEmpty) return;
     String downloadUrl = url;
-    if (url.contains("upload/")) {
+
+    final String extension = url.split('.').last.toLowerCase();
+
+    // Giữ nguyên logic phân loại link chuẩn của bạn
+    if (url.contains("upload/") &&
+        (extension == 'pdf' ||
+            extension == 'png' ||
+            extension == 'jpg' ||
+            extension == 'jpeg')) {
       downloadUrl = url.replaceFirst("upload/", "upload/fl_attachment/");
     }
+
     final Uri uri = Uri.parse(downloadUrl);
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    try {
+      // ÉP MỞ THẲNG: Không cần check canLaunchUrl nữa, đẩy thẳng qua trình duyệt của máy
+      final bool launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        debugPrint("Trình duyệt từ chối mở: $downloadUrl");
+      }
+    } catch (e) {
+      debugPrint("Lỗi mở URL: $e");
+
+      // Phương án dự phòng 2: Nếu mở app ngoài lỗi, ép mở bằng trình duyệt bên trong app
+      try {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      } catch (innerError) {
+        debugPrint("Mở trình duyệt nội bộ cũng thất bại: $innerError");
+      }
+    }
   }
 
   @override

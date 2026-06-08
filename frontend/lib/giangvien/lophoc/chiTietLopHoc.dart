@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:frontend/api.dart';
 import 'package:frontend/giangvien/menuUI/giangVienMenuBar.dart';
 import 'addBaiHocScreen.dart';
@@ -55,12 +54,12 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
 
   Future<void> loadChiTietLopHoc() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
     final res = await http.get(
       Uri.parse('$apiUrl/lophoc/${widget.idKhoaHoc}'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
     );
     if (res.statusCode == 200) lopHoc = json.decode(res.body)['data'];
@@ -68,12 +67,12 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
 
   Future<void> loadBaiHoc() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
     final res = await http.get(
       Uri.parse('$apiUrl/baihoc/${widget.idKhoaHoc}'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
     );
     if (res.statusCode == 200) {
@@ -94,12 +93,12 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
   Future<void> deleteBaiHoc(int idBaiHoc) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final response = await http.delete(
         Uri.parse('${apiUrl}/baihoc/$idBaiHoc'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
       );
       final data = jsonDecode(response.body);
@@ -116,6 +115,13 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     } catch (e) {
       print(e);
     }
+  }
+
+  Future<void> openEditBaiHoc(Map<String, dynamic>baiHoc) async {
+    final result = await Navigator.push(context, 
+    MaterialPageRoute(builder: (_)=>Addbaihocscreen(idKhoaHoc: widget.idKhoaHoc, baiHoc: baiHoc,)));
+    if(result == true) 
+      loadAllData();
   }
 
   void confirmDelete(int idBaiHoc) {
@@ -163,15 +169,15 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     }
   }
 
-  Future<void> _openFile(String? url) async {
-    if (url == null || url.isEmpty) return;
-    final Uri uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Không thể mở liên kết này")),
-      );
-    }
-  }
+  // Future<void> _openFile(String? url) async {
+  //   if (url == null || url.isEmpty) return;
+  //   final Uri uri = Uri.parse(url);
+  //   if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("Không thể mở liên kết này")),
+  //     );
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +297,7 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
             itemBuilder: (context, index) {
               final b = baiHocs[index];
               final hasVideo = b['videoUrl'] != null && b['videoUrl'] != "";
-              final hasDoc = b['taiLieuUrl'] != null && b['taiLieuUrl'] != "";
+              // final hasDoc = b['taiLieuUrl'] != null && b['taiLieuUrl'] != "";
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -321,13 +327,23 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text("Thứ tự: ${b['thuTu'] ?? index + 1}"),
                   ),
-
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      final id = b['idBaiHoc'];
-                      confirmDelete(id);
-                    },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue,),
+                        onPressed: (){
+                          openEditBaiHoc(b);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          final id = b['idBaiHoc'];
+                          confirmDelete(id);
+                        },
+                      )
+                    ],
                   ),
                 ),
               );

@@ -68,7 +68,7 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
   Future<void> loadChiTietLopHoc() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
-
+    
     final res = await http.get(
       Uri.parse('$apiUrl/lophoc/${widget.idKhoaHoc}'),
       headers: {
