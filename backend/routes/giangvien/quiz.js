@@ -170,39 +170,65 @@ router.post('/', checkGiangVien, async (req, res) => {
 router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
     try {
         const idQuiz = parseInt(req.params.idQuiz);
-        const idGiangVien = req.user.idNguoiDung;
-        const { question, A, B, C, D, dapAnDung } = req.body;
-        const quiz = await prisma.quizzes.findUnique({
-            where: { idQuiz },
-            include: { khoahoc: true, quiz_questions: true }
-        });
-        if (!quiz || quiz.khoahoc.idGiangVien !== idGiangVien) {
-            return res.status(403).json({ error: "Không có quyền" });
+        const {tongDiem=10, questions} = req.body;
+        if(!questions || questions.length === 0){
+            return res.status(400).json({
+                success: false,
+                error:"Phải có ít nhất 1 câu hỏi"
+            })
         }
-        const tongCau = quiz.quiz_questions.length + 1;
-        const diemMoiCau = Number((10 / tongCau).toFixed(2));
-        let newQuestion;
-        await prisma.$transaction(async (tx) => {
-            newQuestion = await tx.quiz_questions.create({ // Lưu lại câu hỏi mới
-                data: {
-                    idQuiz,
-                    cauHoi: JSON.stringify({ question, A, B, C, D }),
-                    dapAnDung,
-                    diemCauHoi: diemMoiCau
+        const quiz = await prisma.quizzes.findMany({
+            where:{
+                idQuiz: idQuiz
+            }
+        })
+        if(!quiz){
+            return res.status(404).json({
+                success: false,
+                error: "Quiz không tồn tại"
+            })
+        }
+        const diemMoiCauHoi = tongDiem/questions.length;
+        for(const q of questions){
+            const coDapAnDung = q.answers.some(a => a.laDung);
+            if(!coDapAnDung){
+                return res.status(400).json({
+                    success: false,
+                    error: "Mỗi câu hỏi phải có ít nhất 1 đáp án đúng"
+                })
+            }
+        }
+        const result = await prisma.$transaction(
+            questions.map(q => prisma.quiz_questions.create({
+                data:{
+                    cauHoi: q.cauHoi,
+                    diemCauHoi: diemMoiCauHoi,
+                    quizzes:{
+                        connect: 
+                        {
+                            idQuiz
+                        }
+                    },
+                    answers:{
+                        create: q.answers.map(a=>({
+                            noiDung: a.noiDung,
+                            laDung: a.laDung
+                        }))
+                    }
+                },
+                include:{
+                    answers: true
                 }
-            });
-            await tx.quiz_questions.updateMany({
-                where: { idQuiz },
-                data: { diemCauHoi: diemMoiCau }
-            });
-        });
-
+            }))
+        )
         res.json({
-            success: true,
-            data: newQuestion,
-            message: "Thêm câu hỏi thành công + chia lại điểm"
-        });
-
+            success:true,
+            message:"Tạo câu hỏi thành công",
+            tongDiem,
+            diemMoiCauHoi,
+            soCau: result.length,
+            data: result
+        })
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -210,43 +236,72 @@ router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
 router.put('/cauhoi/:idCauHoi', checkGiangVien, async (req, res) => {
     try {
         const idCauHoi = parseInt(req.params.idCauHoi);
-        const idGiangVien = req.user.idNguoiDung;
-        const { question, A, B, C, D, dapAnDung } = req.body;
-        const cauHoi = await prisma.quiz_questions.findUnique({
+        const {cauHoi, answers} = req.body;
+        const existing = await prisma.quiz_questions.findUnique({
             where: { idCauHoi },
             include: {
                 quizzes: {
                     include: { khoahoc: true }
+                },
+                answers: true
+            }
+        });
+        if(!existing){
+            return res.status(404).json({
+                success: false,
+                error: "Câu hỏi không tồn tại"
+            })
+        }
+        if (!answers || answers.length === 0) {
+            return res.status(400).json({ success: false, error: "Phải có đáp án" });
+        }
+
+        if (!answers.some(a => a.laDung)) {
+            return res.status(400).json({ success: false, error: "Phải có đáp án đúng" });
+        }
+        const result = await prisma.$transaction(async(tx)=>{
+            const idsGuiLen = answers.filter(a=>a.idDapAn).map(a=>a.idDapAn);
+            await tx.quiz_answers.deleteMany({
+                where: {
+                    idCauHoi,
+                    idDapAn: { notIn: idsGuiLen.length ? idsGuiLen : [0] }
+                }
+            });
+            for(const a of answers){
+                if(a.idDapAn){
+                    await tx.quiz_answers.update({
+                        where:{idDapAn: a.idDapAn},
+                        data: {
+                            noiDung: a.noiDung,
+                            laDung: a.laDung
+                        }
+                    })
+                }
+                else{
+                    await tx.quiz_answers.create({
+                        data: {
+                            noiDung: a.noiDung,
+                            laDung: a.laDung,
+                            idCauHoi
+                        }
+                    })
                 }
             }
-        });
-        if (!question || !A || !B || !C || !D || !dapAnDung) {
-            return res.status(400).json({
-                error: "Thiếu dữ liệu câu hỏi"
-            });
-        }
-
-        if (!['A', 'B', 'C', 'D'].includes(dapAnDung)) {
-            return res.status(400).json({
-                error: "Đáp án không hợp lệ"
-            });
-        }
-        if (!cauHoi || cauHoi.quizzes.khoahoc.idGiangVien !== idGiangVien) {
-            return res.status(403).json({ error: "Không có quyền" });
-        }
-        const updated = await prisma.quiz_questions.update({
-            where: { idCauHoi },
-            data: {
-                cauHoi: JSON.stringify({ question, A, B, C, D }),
-                dapAnDung
-            }
-        });
-
+            return await tx.quiz_questions.update({
+                where: { idCauHoi },
+                data:{
+                    cauHoi: cauHoi ?? existing.cauHoi
+                },
+                include:{
+                    answers: true
+                }
+            })
+        })
         res.json({
             success: true,
-            data: updated
-        });
-
+            message: "Update thành công",
+            data: result
+        })
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -254,7 +309,6 @@ router.put('/cauhoi/:idCauHoi', checkGiangVien, async (req, res) => {
 router.delete('/cauhoi/:idCauHoi', checkGiangVien, async (req, res) => {
     try {
         const idCauHoi = parseInt(req.params.idCauHoi);
-        const idGiangVien = req.user.idNguoiDung;
         const cauHoi = await prisma.quiz_questions.findUnique({
             where: { idCauHoi },
             include: {
@@ -269,19 +323,13 @@ router.delete('/cauhoi/:idCauHoi', checkGiangVien, async (req, res) => {
                 error: "Không tìm thấy câu hỏi"
             });
         }
-        if (!cauHoi.quizzes || !cauHoi.quizzes.khoahoc) {
-            return res.status(500).json({
-                success: false,
-                error: "Dữ liệu quiz bị lỗi"
-            });
-        }
-        if (cauHoi.quizzes.khoahoc.idGiangVien !== idGiangVien) {
-            return res.status(403).json({
-                success: false,
-                error: "Không có quyền"
-            });
-        }
         const idQuiz = cauHoi.idQuiz;
+        const quiz = await prisma.quizzes.findUnique({
+            where: 
+            { 
+                idQuiz 
+            }
+        });
         await prisma.$transaction(async (tx) => {
             await tx.quiz_questions.delete({
                 where: { idCauHoi }
@@ -313,8 +361,7 @@ router.delete('/cauhoi/:idCauHoi', checkGiangVien, async (req, res) => {
 router.put('/:idQuiz', checkGiangVien, async (req, res) => {
     try {
         const idQuiz = parseInt(req.params.idQuiz);
-        const idGiangVien = req.user.idNguoiDung;
-        let { tenQuiz, thoiGianLamBai } = req.body;
+        let { tenQuiz, thoiGianLamBai, ngayDenHan } = req.body;
         if (isNaN(idQuiz)) {
             return res.status(400).json({
                 success: false,
@@ -345,6 +392,16 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
                 });
             }
         }
+        if (ngayDenHan !== undefined) {
+            const ngayTao = quiz.ngayTao;
+
+            if (ngayDenHan <= ngayTao) {
+                return res.status(400).json({
+                    success: false,
+                    error: "Ngày đến hạn phải lớn hơn ngày tạo"
+                });
+            }
+        }
         const quiz = await prisma.quizzes.findUnique({
             where: { idQuiz },
             include: { khoahoc: true }
@@ -355,17 +412,12 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
                 error: "Quiz không tồn tại"
             });
         }
-        if (quiz.khoahoc.idGiangVien !== idGiangVien) {
-            return res.status(403).json({
-                success: false,
-                error: "Bạn không có quyền"
-            });
-        }
         const updatedQuiz = await prisma.quizzes.update({
             where: { idQuiz },
             data: {
                 ...(tenQuiz !== undefined && { tenQuiz }),
-                ...(thoiGianLamBai !== undefined && { thoiGianLamBai })
+                ...(thoiGianLamBai !== undefined && { thoiGianLamBai }),
+                ...(ngayDenHan !== undefined && { ngayDenHan })
             }
         });
         res.json({
@@ -383,7 +435,6 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
 router.delete('/:idQuiz', checkGiangVien, async (req, res) => {
     try {
         const idQuiz = parseInt(req.params.idQuiz);
-        const idGiangVien = req.user.idNguoiDung;
         if (isNaN(idQuiz)) {
             return res.status(400).json({
                 success: false,
@@ -398,12 +449,6 @@ router.delete('/:idQuiz', checkGiangVien, async (req, res) => {
             return res.status(404).json({
                 success: false,
                 error: "Quiz không tồn tại"
-            });
-        }
-        if (quiz.khoahoc.idGiangVien !== idGiangVien) {
-            return res.status(403).json({
-                success: false,
-                error: "Bạn không có quyền xoá quiz này"
             });
         }
         await prisma.quizzes.delete({
