@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/api.dart';
-import 'package:frontend/giangvien/menuUI/giangVienMenuBar.dart';
-import 'package:frontend/giangvien/baikiemtra/addBaiKiemTraGVScreen.dart';
 
 class AddBaiKiemTraGVScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -25,6 +23,7 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
 
   final TextEditingController tenQuizController = TextEditingController();
   final TextEditingController thoiGianController = TextEditingController();
+  final TextEditingController ngayDenHanController = TextEditingController();
 
   bool isLoading = false;
 
