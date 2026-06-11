@@ -27,12 +27,12 @@ class _CauhoigvscreenState extends State<Cauhoigvscreen> {
     setState(() => isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final res = await http.get(
         Uri.parse('$apiUrl/${widget.quiz["idKhoaHoc"]}'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -46,7 +46,7 @@ class _CauhoigvscreenState extends State<Cauhoigvscreen> {
         );
         if (currentQuiz != null) {
           setState(() {
-            cauHoi = currentQuiz["quiz_questions"] ?? [];
+            cauHoi = currentQuiz["questions"] ?? [];
           });
         }
       }
@@ -60,12 +60,12 @@ class _CauhoigvscreenState extends State<Cauhoigvscreen> {
   Future<void> deleteCauHoi(int id) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final res = await http.delete(
         Uri.parse('$apiUrl/cauhoi/$id'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
       );
       final data = jsonDecode(res.body);
@@ -88,22 +88,21 @@ class _CauhoigvscreenState extends State<Cauhoigvscreen> {
   }
 
   void showForm({Map? item}) {
-    final qController = TextEditingController(
-      text: item != null ? jsonDecode(item["cauHoi"])["question"] : "",
-    );
-    final aController = TextEditingController(
-      text: item != null ? jsonDecode(item["cauHoi"])["A"] : "",
-    );
-    final bController = TextEditingController(
-      text: item != null ? jsonDecode(item["cauHoi"])["B"] : "",
-    );
-    final cController = TextEditingController(
-      text: item != null ? jsonDecode(item["cauHoi"])["C"] : "",
-    );
-    final dController = TextEditingController(
-      text: item != null ? jsonDecode(item["cauHoi"])["D"] : "",
-    );
-    String dapAn = item?["dapAnDung"] ?? "A";
+    final qController = TextEditingController(text: item?["cauHoi"] ?? "");
+    List<TextEditingController> controllers = [];
+    List<bool> isCorrect = [];
+    if (item != null) {
+      final answers = item["answers"] ?? [];
+      for (var a in answers) {
+        controllers.add(TextEditingController(text: a["noiDung"]));
+        isCorrect.add(a["laDung"]);
+      }
+    } else {
+      for (int i = 0; i < 4; i++) {
+        controllers.add(TextEditingController());
+        isCorrect.add(i == 0);
+      }
+    }
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -116,40 +115,33 @@ class _CauhoigvscreenState extends State<Cauhoigvscreen> {
                   controller: qController,
                   decoration: const InputDecoration(labelText: "Câu hỏi"),
                 ),
-                TextField(
-                  controller: aController,
-                  decoration: const InputDecoration(labelText: "Đáp án A"),
-                ),
-                TextField(
-                  controller: bController,
-                  decoration: const InputDecoration(labelText: "Đáp án B"),
-                ),
-                TextField(
-                  controller: cController,
-                  decoration: const InputDecoration(labelText: "Đáp án C"),
-                ),
-                TextField(
-                  controller: dController,
-                  decoration: const InputDecoration(labelText: "Đáp án D"),
-                ),
-
                 const SizedBox(height: 10),
-                DropdownButton<String>(
-                  value: dapAn,
-                  items: ["A", "B", "C", "D"]
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text("Đáp án đúng: $e"),
+                ...List.generate(controllers.length, (i) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: controllers[i],
+                          decoration: InputDecoration(
+                            labelText: "Đáp án ${i + 1}",
+                          ),
                         ),
-                      )
-                      .toList(),
-                  onChanged: (val) {
-                    setStateDialog(() {
-                      dapAn = val!;
-                    });
-                  },
-                ),
+                      ),
+                      Radio<bool>(
+                        value: true,
+                        groupValue: isCorrect[i],
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            for (int j = 0; j < isCorrect.length; j++) {
+                              isCorrect[j] = false;
+                            }
+                            isCorrect[i] = true;
+                          });
+                        },
+                      ),
+                    ],
+                  );
+                }),
               ],
             ),
           ),
@@ -161,43 +153,56 @@ class _CauhoigvscreenState extends State<Cauhoigvscreen> {
             ElevatedButton(
               onPressed: () async {
                 final prefs = await SharedPreferences.getInstance();
-                final userId = prefs.getInt("userId");
-                final body = {
-                  "question": qController.text,
-                  "A": aController.text,
-                  "B": bController.text,
-                  "C": cController.text,
-                  "D": dController.text,
-                  "dapAnDung": dapAn,
-                };
+                final token = prefs.getString("token");
+                final answers = List.generate(controllers.length, (i) {
+                  return {
+                    if (item != null && i < item["answers"].length)
+                      "idDapAn": item["answers"][i]["idDapAn"],
+                    "noiDung": controllers[i].text,
+                    "laDung": isCorrect[i],
+                  };
+                });
+                http.Response res;
                 if (item == null) {
-                  final res = await http.post(
+                  final body = {
+                    "questions": [
+                      {"cauHoi": qController.text, "answers": answers},
+                    ],
+                  };
+                  res = await http.post(
                     Uri.parse('$apiUrl/${widget.quiz["idQuiz"]}/cauhoi'),
                     headers: {
                       "Content-Type": "application/json",
-                      "x-user-id": userId.toString(),
+                      "Authorization": "Bearer $token",
                     },
                     body: jsonEncode(body),
                   );
-                  if (jsonDecode(res.body)["success"] == true) {
-                    await fetchCauHoi();
-                  }
                 } else {
-                  final res = await http.put(
+                  final body = {"cauHoi": qController.text, "answers": answers};
+                  res = await http.put(
                     Uri.parse('$apiUrl/cauhoi/${item["idCauHoi"]}'),
                     headers: {
                       "Content-Type": "application/json",
-                      "x-user-id": userId.toString(),
+                      "Authorization": "Bearer $token",
                     },
                     body: jsonEncode(body),
                   );
-                  if (jsonDecode(res.body)["success"] == true) {
-                    await fetchCauHoi(); // Tải lại để cập nhật nội dung
-                  }
                 }
+                final data = jsonDecode(res.body);
+                if (res.statusCode == 200 && data["success"] == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Lưu thành công")),
+                  );
+                  await fetchCauHoi();
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(data["error"] ?? "Có lỗi xảy ra")),
+                  );
+                }
+                await fetchCauHoi();
                 Navigator.pop(context);
               },
-
               child: const Text("Lưu"),
             ),
           ],
@@ -220,59 +225,45 @@ class _CauhoigvscreenState extends State<Cauhoigvscreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => showForm(),
-        child: const Icon(Icons.add, color: Colors.white,),
+        child: const Icon(Icons.add, color: Colors.white),
         backgroundColor: Colors.blue,
       ),
       body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : cauHoi.isEmpty
-          ? const Center(
-              child: Text("Chưa có câu hỏi nào. Hãy thêm mới!"),
-            )
+          ? const Center(child: Text("Chưa có câu hỏi nào. Hãy thêm mới!"))
           : RefreshIndicator(
               onRefresh: fetchCauHoi,
               child: ListView.builder(
                 itemCount: cauHoi.length,
                 itemBuilder: (context, index) {
                   final q = cauHoi[index];
-                  final data = jsonDecode(q["cauHoi"]);
+                  final answers = q["answers"] ?? [];
 
                   return Card(
                     margin: const EdgeInsets.all(10),
-                    elevation: 3, // Thêm chút bóng đổ cho đẹp
                     child: ListTile(
                       title: Text(
-                        "Câu ${index + 1}: ${data["question"]}",
+                        "Câu ${index + 1}: ${q["cauHoi"]}",
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("A. ${data["A"]}"),
-                            Text("B. ${data["B"]}"),
-                            Text("C. ${data["C"]}"),
-                            Text("D. ${data["D"]}"),
-                            const Divider(),
-                            Text(
-                              "Đáp án đúng: ${q["dapAnDung"]}",
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontWeight: FontWeight.bold,
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ...answers.map<Widget>((a) {
+                            return Text(
+                              "- ${a["noiDung"]}",
+                              style: TextStyle(
+                                color: a["laDung"]
+                                    ? Colors.green
+                                    : Colors.black,
+                                fontWeight: a["laDung"]
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
-                            ),
-                            Text(
-                              "Điểm: ${q["diemCauHoi"]}",
-                              style: const TextStyle(
-                                color: Colors.blueGrey,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+                            );
+                          }).toList(),
+                        ],
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,

@@ -31,7 +31,11 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
                 idKhoaHoc: idKhoaHoc
             },
             include: {
-                quiz_questions: true
+                questions: {
+                    include:{
+                        answers: true
+                    }
+                }
             },
             orderBy: {
                 idQuiz: 'desc'
@@ -136,7 +140,8 @@ router.post('/', checkGiangVien, async (req, res) => {
             }
             thoiGianLamBai = parseInt(thoiGianLamBai);
         }
-        if (ngayDenHan) {
+        let parsedNgayDenHan = null;
+        if (ngayDenHan && ngayDenHan !== "") {
             const deadline = new Date(ngayDenHan);
             const now = new Date();
 
@@ -153,6 +158,8 @@ router.post('/', checkGiangVien, async (req, res) => {
                     error: "Ngày đến hạn phải lớn hơn hiện tại"
                 });
             }
+
+            parsedNgayDenHan = deadline;
         }
         const idGiangVien = req.user.idNguoiDung;
         const lophoc = await prisma.khoahoc.findFirst({
@@ -171,7 +178,7 @@ router.post('/', checkGiangVien, async (req, res) => {
             data: {
                 tenQuiz,
                 thoiGianLamBai,
-                ngayDenHan,
+                ngayDenHan: parsedNgayDenHan,
                 idKhoaHoc
             }
         });
@@ -196,7 +203,7 @@ router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
                 error: "Phải có ít nhất 1 câu hỏi"
             })
         }
-        const quiz = await prisma.quizzes.findMany({
+        const quiz = await prisma.quizzes.findUnique({
             where: {
                 idQuiz: idQuiz
             }
@@ -209,13 +216,20 @@ router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
         }
         const diemMoiCauHoi = tongDiem / questions.length;
         for (const q of questions) {
-            const coDapAnDung = q.answers.some(a => a.laDung);
-            if (!coDapAnDung) {
+            const validAnswers = (q.answers || []).filter(a => a.noiDung && a.noiDung.trim() !== "");
+            if (validAnswers.length < 4) {
+                return res.status(400).json({
+                    success: false,
+                    error: "Mỗi câu hỏi phải có ít nhất 4 đáp án hợp lệ"
+                });
+            }
+            if (!validAnswers.some(a => a.laDung)) {
                 return res.status(400).json({
                     success: false,
                     error: "Mỗi câu hỏi phải có ít nhất 1 đáp án đúng"
-                })
+                });
             }
+            q.answers = validAnswers;
         }
         const result = await prisma.$transaction(
             questions.map(q => prisma.quiz_questions.create({
@@ -230,7 +244,7 @@ router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
                     },
                     answers: {
                         create: q.answers.map(a => ({
-                            noiDung: a.noiDung,
+                            noiDung: a.noiDung.trim(),
                             laDung: a.laDung
                         }))
                     }
@@ -271,22 +285,27 @@ router.put('/cauhoi/:idCauHoi', checkGiangVien, async (req, res) => {
                 error: "Câu hỏi không tồn tại"
             })
         }
-        if (!answers || answers.length === 0) {
-            return res.status(400).json({ success: false, error: "Phải có đáp án" });
+        const validAnswers = answers.filter(a => a.noiDung && a.noiDung.trim() !== "");
+
+        if (validAnswers.length < 4) {
+            return res.status(400).json({
+                success: false,
+                error: "Phải có ít nhất 4 đáp án hợp lệ"
+            });
         }
 
-        if (!answers.some(a => a.laDung)) {
+        if (!validAnswers.some(a => a.laDung)) {
             return res.status(400).json({ success: false, error: "Phải có đáp án đúng" });
         }
         const result = await prisma.$transaction(async (tx) => {
-            const idsGuiLen = answers.filter(a => a.idDapAn).map(a => a.idDapAn);
+            const idsGuiLen = validAnswers.filter(a => a.idDapAn).map(a => a.idDapAn);
             await tx.quiz_answers.deleteMany({
                 where: {
                     idCauHoi,
                     idDapAn: { notIn: idsGuiLen.length ? idsGuiLen : [0] }
                 }
             });
-            for (const a of answers) {
+            for (const a of validAnswers) {
                 if (a.idDapAn) {
                     await tx.quiz_answers.update({
                         where: { idDapAn: a.idDapAn },
@@ -387,6 +406,10 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
                 error: "idQuiz không hợp lệ"
             });
         }
+        const quiz = await prisma.quizzes.findUnique({
+            where: { idQuiz },
+            include: { khoahoc: true }
+        });
         if (tenQuiz !== undefined) {
             tenQuiz = tenQuiz.trim();
             if (!tenQuiz) {
@@ -411,20 +434,32 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
                 });
             }
         }
+        let parsedNgayDenHan;
         if (ngayDenHan !== undefined) {
-            const ngayTao = quiz.ngayTao;
+            if(ngayDenHan === null || ngayDenHan === "") {
+                parsedNgayDenHan = null;
+            }
+            else{
+                 const deadline = new Date(ngayDenHan);
 
-            if (ngayDenHan <= ngayTao) {
-                return res.status(400).json({
-                    success: false,
-                    error: "Ngày đến hạn phải lớn hơn ngày tạo"
-                });
+                if (isNaN(deadline.getTime())) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "Ngày không hợp lệ"
+                    });
+                }
+
+                if (deadline <= quiz.ngayTao) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "Ngày đến hạn phải lớn hơn ngày tạo"
+                    });
+                }
+
+                parsedNgayDenHan = deadline;
             }
         }
-        const quiz = await prisma.quizzes.findUnique({
-            where: { idQuiz },
-            include: { khoahoc: true }
-        });
+        
         if (!quiz) {
             return res.status(404).json({
                 success: false,
@@ -436,7 +471,7 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
             data: {
                 ...(tenQuiz !== undefined && { tenQuiz }),
                 ...(thoiGianLamBai !== undefined && { thoiGianLamBai }),
-                ...(ngayDenHan !== undefined && { ngayDenHan })
+                ...(ngayDenHan !== undefined && { ngayDenHan: parsedNgayDenHan })
             }
         });
         res.json({

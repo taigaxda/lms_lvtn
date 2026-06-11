@@ -41,13 +41,13 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
   Future<void> fetchQuiz() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
 
       final res = await http.get(
         Uri.parse('$apiUrl/${widget.idKhoaHoc}'),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.toString(),
+          "Authorization": "Bearer $token",
         },
       );
       final data = jsonDecode(res.body);
@@ -65,12 +65,12 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
 
   Future<void> deleteQuiz(int idQuiz) async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
     final res = await http.delete(
       Uri.parse('$apiUrl/$idQuiz'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
     );
     final data = jsonDecode(res.body);
@@ -255,7 +255,7 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
                                           color: Colors.grey,
                                         ),
                                         Text(
-                                          "${quiz["quiz_questions"]?.length ?? 0} câu",
+                                          "${quiz["questions"]?.length ?? 0} câu",
                                         ),
 
                                         const Text(

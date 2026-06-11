@@ -8,14 +8,10 @@ class AddBaiKiemTraGVScreen extends StatefulWidget {
   final int idKhoaHoc;
   final Map<String, dynamic>? quiz;
 
-  const AddBaiKiemTraGVScreen({
-    super.key,
-    required this.idKhoaHoc,
-    this.quiz,
-  });
+  const AddBaiKiemTraGVScreen({super.key, required this.idKhoaHoc, this.quiz});
 
   @override
-  State<AddBaiKiemTraGVScreen> createState() =>_AddBaiKiemTraGVScreenState();
+  State<AddBaiKiemTraGVScreen> createState() => _AddBaiKiemTraGVScreenState();
 }
 
 class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
@@ -34,20 +30,27 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
     super.initState();
     if (widget.quiz != null) {
       tenQuizController.text = widget.quiz!["tenQuiz"] ?? "";
-      thoiGianController.text =
-          (widget.quiz!["thoiGianLamBai"] ?? "").toString();
+      thoiGianController.text = (widget.quiz!["thoiGianLamBai"] ?? "")
+          .toString();
+      if (widget.quiz!["ngayDenHan"] != null) {
+        ngayDenHanController.text = widget.quiz!["ngayDenHan"].toString();
+      }
     }
   }
+
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
       final body = {
         "tenQuiz": tenQuizController.text.trim(),
         "thoiGianLamBai": int.parse(thoiGianController.text.trim()),
-        "idKhoaHoc": widget.idKhoaHoc
+        "ngayDenHan": ngayDenHanController.text.trim().isEmpty
+            ? null
+            : ngayDenHanController.text.trim(),
+        "idKhoaHoc": widget.idKhoaHoc,
       };
       http.Response res;
       if (widget.quiz == null) {
@@ -55,7 +58,7 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
           Uri.parse(apiUrl),
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userId.toString(),
+            "Authorization": "Bearer $token",
           },
           body: jsonEncode(body),
         );
@@ -64,11 +67,12 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
           Uri.parse('$apiUrl/${widget.quiz!["idQuiz"]}'),
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": userId.toString(),
+            "Authorization": "Bearer $token",
           },
           body: jsonEncode({
             "tenQuiz": body["tenQuiz"],
             "thoiGianLamBai": body["thoiGianLamBai"],
+            "ngayDenHan": body["ngayDenHan"],
           }),
         );
       }
@@ -76,9 +80,11 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
       if (data["success"]) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.quiz == null
-                ? "Tạo bài kiểm tra thành công"
-                : "Cập nhật thành công"),
+            content: Text(
+              widget.quiz == null
+                  ? "Tạo bài kiểm tra thành công"
+                  : "Cập nhật thành công",
+            ),
           ),
         );
         Navigator.pop(context, true);
@@ -86,13 +92,29 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
         throw Exception(data["error"]);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
     } finally {
       setState(() => isLoading = false);
     }
   }
+
+  Future<void> pickDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        ngayDenHanController.text = pickedDate.toIso8601String();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.quiz != null;
@@ -142,6 +164,34 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: ngayDenHanController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: "Ngày đến hạn (có thể bỏ trống nếu là bài ôn tập)",
+                  border: const OutlineInputBorder(),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (ngayDenHanController.text.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              ngayDenHanController.clear();
+                            });
+                          },
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.calendar_today),
+                        onPressed: pickDate,
+                      ),
+                    ],
+                  ),
+                ),
+                onTap: pickDate,
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -149,16 +199,16 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
                   onPressed: isLoading ? null : submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
-                        )
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
                           isEdit ? "Cập nhật" : "Tạo bài kiểm tra",
-                          style: const TextStyle(fontSize: 16,color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
                 ),
               ),
