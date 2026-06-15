@@ -214,7 +214,17 @@ router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
                 error: "Quiz không tồn tại"
             })
         }
-        const diemMoiCauHoi = tongDiem / questions.length;
+        const soCauHienTai= await prisma.quiz_questions.count({
+            where:{
+                idQuiz
+            }
+        })
+        const tongSoCau = soCauHienTai+ questions.length
+        const diemMoiCauHoi = tongDiem / tongSoCau;
+        await prisma.quiz_questions.updateMany({
+            where: { idQuiz },
+            data: { diemCauHoi: diemMoiCauHoi }
+        });
         for (const q of questions) {
             const validAnswers = (q.answers || []).filter(a => a.noiDung && a.noiDung.trim() !== "");
             if (validAnswers.length < 4) {

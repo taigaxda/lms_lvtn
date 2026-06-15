@@ -25,7 +25,7 @@ router.get('/dsquiz/:idKhoaHoc', checkHocVien, async (req, res) => {
                 idKhoaHoc
             },
             include: {
-                quiz_results: {
+                results: {
                     where: {
                         idNguoiDung
                     }
@@ -36,8 +36,9 @@ router.get('/dsquiz/:idKhoaHoc', checkHocVien, async (req, res) => {
             idQuiz: q.idQuiz,
             tenQuiz: q.tenQuiz,
             thoiGianLamBai: q.thoiGianLamBai,
-            daLam: q.quiz_results.length > 0,
-            diem: q.quiz_results[0]?.diemSo || null
+            ngayDenHan: q.ngayDenHan,
+            daLam: q.results.length > 0,
+            diem: q.results[0]?.diemSo || null
         }));
 
         res.json({
@@ -48,6 +49,15 @@ router.get('/dsquiz/:idKhoaHoc', checkHocVien, async (req, res) => {
         res.status(500).json({ error: error.message })
     }
 })
+
+function randomCauHoi(arr) {
+    const array = [...arr];
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
 router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
     try {
         const idNguoiDung = req.user.idNguoiDung;
@@ -62,7 +72,11 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
             where: { idQuiz },
             include: {
                 khoahoc: true,
-                quiz_questions: true
+                questions: {
+                    include: {
+                        answers: true
+                    }
+                }
             }
         });
         if (!quiz) {
@@ -95,23 +109,31 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
                 message: "Bạn đã làm bài rồi"
             });
         }
-        const questions = quiz.quiz_questions.map(q => {
-            const data = JSON.parse(q.cauHoi);
-            return {
+        if (quiz.ngayDenHan && new Date() > new Date(quiz.ngayDenHan)) {
+            return res.status(400).json({
+                success: false,
+                message: "Bài kiểm tra dã quá hạn"
+            })
+        }
+        const questions = randomCauHoi(
+            quiz.questions.map(q => ({
                 idCauHoi: q.idCauHoi,
-                question: data.question,
-                A: data.A,
-                B: data.B,
-                C: data.C,
-                D: data.D
-            };
-        });
+                cauHoi: q.cauHoi,
+                diemCauHoi: q.diemCauHoi,
+                answers: randomCauHoi(
+                    q.answers.map(a => ({
+                        idDapAn: a.idDapAn,
+                        noiDung: a.noiDung
+                })))
+            }))
+        );
         res.json({
             success: true,
             data: {
                 idQuiz: quiz.idQuiz,
                 tenQuiz: quiz.tenQuiz,
                 thoiGianLamBai: quiz.thoiGianLamBai,
+                ngayDenHan: quiz.ngayDenHan,
                 questions
             }
         });
@@ -121,39 +143,40 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
 });
 
 router.get('/chualam', checkHocVien, async (req, res) => {
-  try {
-    const idNguoiDung = req.user.idNguoiDung;
-    const data = await prisma.khoahoc.findMany({
-      where: {
-        dangky_khoahoc: {
-          some: { idNguoiDung }
-        }
-      },
-      select: {
-        idKhoaHoc: true,
-        tenKhoaHoc: true,
-        quizzes: {
-          where: {
-            quiz_results: {
-              none: { idNguoiDung }
+    try {
+        const idNguoiDung = req.user.idNguoiDung;
+        const data = await prisma.khoahoc.findMany({
+            where: {
+                dangky_khoahoc: {
+                    some: { idNguoiDung }
+                }
+            },
+            select: {
+                idKhoaHoc: true,
+                tenKhoaHoc: true,
+                quizzes: {
+                    where: {
+                        quiz_results: {
+                            none: { idNguoiDung }
+                        }
+                    },
+                    select: {
+                        idQuiz: true,
+                        tenQuiz: true,
+                        thoiGianLamBai: true
+                    }
+                }
             }
-          },
-          select: {
-            idQuiz: true,
-            tenQuiz: true,
-            thoiGianLamBai: true
-          }
-        }
-      }
-    });
-    res.json({
-      success: true,
-      data: data
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+        });
+        res.json({
+            success: true,
+            data: data
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
+
 
 router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
     try {
@@ -166,11 +189,21 @@ router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
                 message: "ID bài kiểm tra không hợp lệ"
             });
         }
+        if (!Array.isArray(answers)) {
+            return res.status(400).json({
+                success: false,
+                message: "Format answers phải là array"
+            });
+        }
         const quiz = await prisma.quizzes.findUnique({
             where: { idQuiz },
             include: {
                 khoahoc: true,
-                quiz_questions: true
+                questions:{
+                    include:{
+                        answers: true
+                    }
+                }
             }
         });
         if (!quiz) {
@@ -204,17 +237,41 @@ router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
                 message: "Bạn đã làm bài kiểm tra này rồi"
             });
         }
-        let tongDiem = 0;
-        if (!answers) {
+        if (quiz.ngayDenHan && new Date() > new Date(quiz.ngayDenHan)) {
             return res.status(400).json({
                 success: false,
-                message: "Thiếu đáp án"
+                message: "Đã quá hạn nộp bài"
             });
         }
-        for (const q of quiz.quiz_questions) {
-            const dapAn = answers[q.idCauHoi];
-            if (dapAn && dapAn === q.dapAnDung) {
-                tongDiem += Number(q.diemCauHoi);
+        const questionsIds = quiz.questions.map(q=>q.idCauHoi)
+        const answeredIds = answers.map(a=>a.idCauHoi);
+        const missing = questionsIds.filter(id=>!answeredIds.includes(id));
+        if(missing.length>0){
+            return res.status(400).json({
+                success: false,
+                message: "Bạn chưa trả lời hết tất cả câu hỏi",
+                issingQuestions: missing
+            })
+        }
+        const uniqueAnswered = new Set(answeredIds);
+        if (uniqueAnswered.size !== answeredIds.length) {
+            return res.status(400).json({
+                success: false,
+                message: "Có câu trả lời bị trùng"
+            });
+        }
+        const answerMap = {};
+        for (const a of answers){
+            answerMap[a.idCauHoi]=a.idDapAn
+        }
+        let tongDiem = 0;
+        for (const q of quiz.questions) {
+            const userAnswerId = answerMap[q.idCauHoi];
+            if(!userAnswerId)
+                continue;
+            const dapAnDung = q.answers.find(a=>a.laDung === true);
+            if(dapAnDung&&dapAnDung.idDapAn===userAnswerId){
+                tongDiem+=Number(q.diemCauHoi);
             }
         }
 

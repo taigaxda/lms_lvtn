@@ -40,13 +40,13 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
 
   Future<void> loadQuiz() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
 
     final res = await http.get(
       Uri.parse('$apiUrl/quiz/baikiemtra/${widget.idQuiz}'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
     );
 
@@ -56,11 +56,14 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
       setState(() {
         quiz = data;
         questions = data['questions'];
-        remainingTime = (data['thoiGianLamBai'] ?? 0) * 60;
         isLoading = false;
       });
-
-      startTimer();
+      if (data['thoiGianLamBai'] != null) {
+        remainingTime = data['thoiGianLamBai'] * 60;
+        startTimer();
+      } else {
+        remainingTime = -1;
+      }
     }
   }
 
@@ -86,16 +89,22 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
   Future<void> submitQuiz() async {
     timer?.cancel();
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
-
+    final token = prefs.getString("token");
+    
+    List formattedAnswers = answers.entries.map((e){
+      return{
+        "idCauHoi": int.parse(e.key),
+        "idDapAn": int.parse(e.value)
+      };
+    }).toList();
     final res = await http.post(
       Uri.parse('$apiUrl/quiz/${widget.idQuiz}/nopbai'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId.toString(),
+        "Authorization": "Bearer $token",
       },
       body: jsonEncode({
-        "answers": answers,
+        "answers": formattedAnswers,
       }),
     );
 
@@ -139,16 +148,16 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Câu hỏi: ${q['question']}"),
+            Text("Câu hỏi: ${q['cauHoi']}"),
             const SizedBox(height: 10),
-            ...['A', 'B', 'C', 'D'].map((key) {
+            ...q['answers'].map<Widget>((a){
               return RadioListTile(
-                title: Text(q[key]),
-                value: key,
+                title: Text(a['noiDung']),
+                value: a['idDapAn'].toString(),
                 groupValue: answers[id],
-                onChanged: (val) {
+                onChanged: (value) {
                   setState(() {
-                    answers[id] = val!;
+                    answers[id]=value!;
                   });
                 },
               );
