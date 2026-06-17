@@ -90,12 +90,9 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
     timer?.cancel();
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
-    
-    List formattedAnswers = answers.entries.map((e){
-      return{
-        "idCauHoi": int.parse(e.key),
-        "idDapAn": int.parse(e.value)
-      };
+
+    List formattedAnswers = answers.entries.map((e) {
+      return {"idCauHoi": int.parse(e.key), "idDapAn": int.parse(e.value)};
     }).toList();
     final res = await http.post(
       Uri.parse('$apiUrl/quiz/${widget.idQuiz}/nopbai'),
@@ -103,9 +100,7 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token",
       },
-      body: jsonEncode({
-        "answers": formattedAnswers,
-      }),
+      body: jsonEncode({"answers": formattedAnswers}),
     );
 
     final data = jsonDecode(res.body);
@@ -124,14 +119,14 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
                 Navigator.pop(context, true);
               },
               child: const Text("OK"),
-            )
+            ),
           ],
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(data['message'] ?? "Lỗi")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(data['message'] ?? "Lỗi")));
     }
   }
 
@@ -150,14 +145,14 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
           children: [
             Text("Câu hỏi: ${q['cauHoi']}"),
             const SizedBox(height: 10),
-            ...q['answers'].map<Widget>((a){
+            ...q['answers'].map<Widget>((a) {
               return RadioListTile(
                 title: Text(a['noiDung']),
                 value: a['idDapAn'].toString(),
                 groupValue: answers[id],
                 onChanged: (value) {
                   setState(() {
-                    answers[id]=value!;
+                    answers[id] = value!;
                   });
                 },
               );
@@ -180,15 +175,11 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
           Padding(
             padding: const EdgeInsets.all(12),
             child: Center(
-              child: Text(
-                formatTime(remainingTime),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: remainingTime == -1
+                  ? const Text("Không giới hạn")
+                  : Text(formatTime(remainingTime)),
             ),
-          )
+          ),
         ],
       ),
       body: isLoading
@@ -197,8 +188,7 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
               children: [
                 Expanded(
                   child: ListView(
-                    children:
-                        questions.map((q) => buildQuestion(q)).toList(),
+                    children: questions.map((q) => buildQuestion(q)).toList(),
                   ),
                 ),
                 Padding(
@@ -212,7 +202,7 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
                       foregroundColor: Colors.white,
                     ),
                   ),
-                )
+                ),
               ],
             ),
     );

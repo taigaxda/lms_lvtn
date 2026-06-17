@@ -44,7 +44,7 @@ class Hocvienmenubar extends StatelessWidget {
 
           ListTile(
             leading: const Icon(Icons.home_work),
-            title: const Text("Bài học - Bài kiểm cần làm"),
+            title: const Text("Bài học - Quiz - Bài tập cần làm"),
             onTap: () {
               Navigator.pushReplacementNamed(context, '/chuaHoanThanhHV');
             },

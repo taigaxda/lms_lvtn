@@ -100,20 +100,46 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
     }
   }
 
-  Future<void> pickDate() async {
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
+  Future<void> pickDateTime() async {
+  final now = DateTime.now();
 
-    if (pickedDate != null) {
-      setState(() {
-        ngayDenHanController.text = pickedDate.toIso8601String();
-      });
-    }
+  final pickedDate = await showDatePicker(
+    context: context,
+    initialDate: now,
+    firstDate: now,
+    lastDate: DateTime(2100),
+  );
+
+  if (pickedDate == null) return;
+
+  final pickedTime = await showTimePicker(
+    context: context,
+    initialTime: TimeOfDay.fromDateTime(now),
+  );
+
+  if (pickedTime == null) return;
+
+  final selectedDateTime = DateTime(
+    pickedDate.year,
+    pickedDate.month,
+    pickedDate.day,
+    pickedTime.hour,
+    pickedTime.minute,
+  );
+
+  if (selectedDateTime.isBefore(now)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Không được chọn thời gian trong quá khứ"),
+      ),
+    );
+    return;
   }
+
+  setState(() {
+    ngayDenHanController.text = selectedDateTime.toIso8601String();
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -185,12 +211,12 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
                         ),
                       IconButton(
                         icon: const Icon(Icons.calendar_today),
-                        onPressed: pickDate,
+                        onPressed: pickDateTime,
                       ),
                     ],
                   ),
                 ),
-                onTap: pickDate,
+                onTap: pickDateTime,
               ),
               const SizedBox(height: 24),
               SizedBox(

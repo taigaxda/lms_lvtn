@@ -7,6 +7,7 @@ import 'package:frontend/giangvien/menuUI/giangVienMenuBar.dart';
 import 'addBaiHocScreen.dart';
 import 'package:frontend/giangvien/baikiemtra/baiKiemTraGVScreen.dart';
 import 'package:frontend/giangvien/quanlyhocvien/qlhvGVScreen.dart';
+import 'package:frontend/giangvien/baitap/baiTapGVScreen.dart';
 
 class ChiTietLopHocScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -165,19 +166,14 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
         ),
       );
     } else {
-      setState(() => _selectedIndex = index);
+       Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Baitapgvscreen(idKhoaHoc: widget.idKhoaHoc),
+        ),
+      );
     }
   }
-
-  // Future<void> _openFile(String? url) async {
-  //   if (url == null || url.isEmpty) return;
-  //   final Uri uri = Uri.parse(url);
-  //   if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("Không thể mở liên kết này")),
-  //     );
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -219,6 +215,10 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.people_outline),
             label: "Quản lý học viên",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book),
+            label: "Bài tập",
           ),
         ],
       ),
@@ -297,7 +297,6 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
             itemBuilder: (context, index) {
               final b = baiHocs[index];
               final hasVideo = b['videoUrl'] != null && b['videoUrl'] != "";
-              // final hasDoc = b['taiLieuUrl'] != null && b['taiLieuUrl'] != "";
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

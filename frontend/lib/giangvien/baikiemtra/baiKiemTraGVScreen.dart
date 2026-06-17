@@ -106,7 +106,7 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Màu nền xám nhạt cho sang
+      backgroundColor: const Color(0xFFF5F7FA), 
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.blue,
