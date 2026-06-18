@@ -6,6 +6,7 @@ import 'package:frontend/api.dart';
 import 'package:frontend/hocvien/menuUI/hocVienMenuBar.dart';
 import 'package:frontend/hocvien/lophoc/hocBaiScreen.dart';
 import 'package:frontend/hocvien/lophoc/danhSachBaiKTScreen.dart';
+import 'baitap/dsBaiTapHVScreen.dart';
 
 class ChiTietLopHocHVScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -68,7 +69,7 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
   Future<void> loadChiTietLopHoc() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
-    
+
     final res = await http.get(
       Uri.parse('$apiUrl/lophoc/${widget.idKhoaHoc}'),
       headers: {
@@ -104,6 +105,16 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => Danhsachbaiktscreen(idKhoaHoc: widget.idKhoaHoc),
+      ),
+    );
+    await loadAllData();
+  }
+
+  Future<void> openDSBaiTapScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Dsbaitaphvscreen(idKhoaHoc: widget.idKhoaHoc),
       ),
     );
     await loadAllData();
@@ -181,7 +192,7 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(lopHoc?['moTa'] ?? "Không có mô tả"),
           ),
-           Padding(
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: ElevatedButton.icon(
               onPressed: openDSBaiKiemTraScreen,
@@ -189,6 +200,22 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
               label: const Text("Xem bài kiểm tra"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ElevatedButton.icon(
+              onPressed: openDSBaiTapScreen,
+              icon: const Icon(Icons.assignment),
+              label: const Text("Xem bài tập"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(

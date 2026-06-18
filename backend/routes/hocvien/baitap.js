@@ -3,8 +3,9 @@ import multer from 'multer';
 import fs from 'fs';
 import { prisma } from '../../prisma/client.js'
 import { checkHocVien } from '../middleware.js'
-import { uploadToCloudinary } from './ggHelper.js'; 
+import { uploadToCloudinary } from './ggHelper.js';
 import { create } from 'domain';
+import path from 'path';
 
 const router = express.Router();
 
@@ -14,6 +15,48 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const upload = multer({ dest: uploadDir });
+
+router.get('/chitiet/:idAssignment', checkHocVien, async (req, res) => {
+    try {
+        const idAssignment = parseInt(req.params.idAssignment);
+        const idNguoiDung = req.user.idNguoiDung;
+        
+        const assignment = await prisma.assignments.findUnique({
+            where: {
+                idAssignment: idAssignment
+            },
+            include: {
+                submissions: {
+                    where: {
+                        idNguoiDung: idNguoiDung
+                    },
+                    include: {
+                        grades: true
+                    }
+                }
+            }
+        });
+        
+        if (!assignment) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy bài tập"
+            });
+        }
+        
+        return res.status(200).json({
+            success: true,
+            message: "Lấy chi tiết bài tập thành công",
+            data: assignment
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
 
 router.get('/:idKhoaHoc', checkHocVien, async (req, res) => {
     try {
@@ -28,8 +71,11 @@ router.get('/:idKhoaHoc', checkHocVien, async (req, res) => {
             },
             include: {
                 submissions: {
-                    where:{
+                    where: {
                         idNguoiDung: idNguoiDung
+                    },
+                    include: {
+                        grades: true
                     }
                 }
             }
@@ -40,7 +86,7 @@ router.get('/:idKhoaHoc', checkHocVien, async (req, res) => {
             data: dsBaiTap
         })
     }
-    catch(err){
+    catch (err) {
         return res.status(500).json({
             success: false,
             message: err.message
@@ -48,11 +94,11 @@ router.get('/:idKhoaHoc', checkHocVien, async (req, res) => {
     }
 })
 
-router.post('/:idAssignment/nopbai',checkHocVien,upload.single('fileNop'),async(req,res)=>{
-    try{
+router.post('/:idAssignment/nopbai', checkHocVien, upload.single('fileNop'), async (req, res) => {
+    try {
         const idAssignment = parseInt(req.params.idAssignment);
         const idNguoiDung = req.user.idNguoiDung
-        let {noiDung}=req.body
+        let { noiDung } = req.body
         noiDung = noiDung ? noiDung.trim() : null
         if (!idAssignment || isNaN(idAssignment)) {
             return res.status(400).json({
@@ -61,11 +107,11 @@ router.post('/:idAssignment/nopbai',checkHocVien,upload.single('fileNop'),async(
             })
         }
         const baiTap = await prisma.assignments.findUnique({
-            where:{
+            where: {
                 idAssignment: idAssignment
             }
         })
-        if(!baiTap){
+        if (!baiTap) {
             return res.status(404).json({
                 success: false,
                 message: "Bài tập khôn còn tồn tại"
@@ -90,18 +136,18 @@ router.post('/:idAssignment/nopbai',checkHocVien,upload.single('fileNop'),async(
             }
         });
         const baiNop = await prisma.submissions.upsert({
-            where:{
+            where: {
                 idAssignment_idNguoiDung: {
                     idAssignment,
                     idNguoiDung
                 }
             },
-            update:{
+            update: {
                 fileNop: fileUrl ?? baiNopCu?.fileNop,
                 noiDung: noiDung ?? baiNopCu?.noiDung,
                 ngayNop: new Date()
             },
-            create:{
+            create: {
                 idAssignment,
                 idNguoiDung,
                 fileNop: fileUrl,
@@ -115,7 +161,7 @@ router.post('/:idAssignment/nopbai',checkHocVien,upload.single('fileNop'),async(
             data: baiNop
         })
     }
-    catch(err){
+    catch (err) {
         return res.status(500).json({
             success: false,
             message: err.message

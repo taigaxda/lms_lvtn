@@ -112,9 +112,14 @@ class _Baitapgvscreen extends State<Baitapgvscreen> {
 
   String formatDate(String? date) {
     if (date == null) return "Không có";
+
     final d = DateTime.tryParse(date);
     if (d == null) return "Không hợp lệ";
-    return "${d.day}/${d.month}/${d.year}";
+
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+
+    return "${twoDigits(d.day)}/${twoDigits(d.month)}/${d.year} "
+        "${twoDigits(d.hour)}:${twoDigits(d.minute)}";
   }
 
   @override
