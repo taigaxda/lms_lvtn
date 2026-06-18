@@ -193,7 +193,7 @@ model submissions {
 
   assignment assignments @relation(fields: [idAssignment], references: [idAssignment], onDelete: Cascade)
   nguoidung nguoidung   @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
-  grades grades[]
+  grades grades?
 
   @@index([idAssignment, idNguoiDung])
   @@unique([idAssignment, idNguoiDung])
@@ -201,7 +201,7 @@ model submissions {
 
 model grades {
   idGrade      Int      @id @default(autoincrement())
-  idSubmission Int
+  idSubmission Int      @unique
   diem         Float
   nhanXet      String?
   ngayCham     DateTime @default(now())
