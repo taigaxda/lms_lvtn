@@ -26,7 +26,22 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
                 ngayTao: 'desc'
             },
             include: {
-                submissions: true
+                submissions: {
+                    include:{
+                        nguoidung: true,
+                        grades: true
+                    },
+                    orderBy:[
+                        {
+                            grades:{
+                                idGrade: 'asc'
+                            }
+                        },
+                        {
+                            ngayNop: 'desc'
+                        }
+                    ]
+                }
             }
         })
         return res.status(200).json({
@@ -177,6 +192,107 @@ router.delete('/:idAssignment',checkGiangVien, async (req, res)=>{
         return res.status(200).json({
             success: true,
             message: "Xóa bài tập thành công",
+        })
+    }
+    catch(err){
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        })
+    }
+})
+router.get('/chitietbt/:idSubmission',checkGiangVien,async(req,res)=>{
+    try{
+        const idSubmission = parseInt(req.params.idSubmission)
+        const chiTiet = await prisma.submissions.findUnique({
+            where:{
+                idSubmission: idSubmission
+            },
+            include:{
+                nguoidung:{
+                    select:{
+                        idNguoiDung: true,
+                        hoTen: true,
+                        email: true
+                    }
+                },
+                grades: true
+            }
+        });
+        if(!chiTiet){
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy bài nộp"
+            });
+        }
+         return res.status(200).json({
+            success: true,
+            message: "Lấy bài nộp của học viên thành công",
+            data: chiTiet
+        });
+    }
+    catch(err){
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        })
+    }
+})
+router.post('/chamdiem/:idSubmission',checkGiangVien,async(req,res)=>{
+    try{
+        const idSubmission = parseInt(req.params.idSubmission)
+        let {diem, nhanXet}=req.body
+        diem = parseFloat(diem);
+        nhanXet = nhanXet?.trim();
+        if (!idSubmission || isNaN(diem)) {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu idSubmission hoặc điểm không hợp lệ"
+            });
+        }
+        if(diem<0||diem>10){
+            return res.status(400).json({
+                success: false,
+                message: "Điểm phải từ 0-10 điểm"
+            });
+        }
+        if(!diem){
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu điểm"
+            })
+        }
+        const tonTaiBT = await prisma.submissions.findUnique({
+            where:{
+                idSubmission: idSubmission
+            }
+        })
+        if(!tonTaiBT){
+            return res.status(404).json({
+                success: false,
+                message: "Không tồn tại bài nộp này"
+            });
+        }
+        const grade = await prisma.grades.upsert({
+            where:{
+                idSubmission: idSubmission
+            },
+            update:{
+                diem: diem,
+                nhanXet: nhanXet,
+                ngayCham: new Date()
+            },
+            create:{
+                idSubmission: idSubmission,
+                diem: diem,
+                nhanXet: nhanXet,
+                ngayCham: new Date()
+            }
+        })
+        return res.status(200).json({
+            success: true,
+            message: "Chấm điểm thành công",
+            data: grade
         })
     }
     catch(err){

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/api.dart';
 import 'themSuaBaiTapGV.dart';
+import 'danhSachBaiNopGVScreen.dart';
 
 class Baitapgvscreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -178,6 +179,17 @@ class _Baitapgvscreen extends State<Baitapgvscreen> {
                       ],
                     ),
                     child: ListTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => Danhsachbainopgvscreen(
+                              submissions: item["submissions"] ?? [],
+                              tieuDe: item["tieuDe"] ?? "",
+                            ),
+                          ),
+                        );
+                      },
                       contentPadding: const EdgeInsets.all(12),
                       leading: const Icon(Icons.assignment, color: Colors.blue),
                       title: Text(

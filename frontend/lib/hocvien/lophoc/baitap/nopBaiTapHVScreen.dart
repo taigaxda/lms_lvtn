@@ -207,8 +207,6 @@ class _NopbaitaphvscreenState extends State<Nopbaitaphvscreen> {
         ),
       );
     }
-
-    // Nếu đang edit và có file cũ
     if (isEdit && widget.submission?["fileNop"] != null) {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -241,7 +239,6 @@ class _NopbaitaphvscreenState extends State<Nopbaitaphvscreen> {
       );
     }
 
-    // Chưa có file nào
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
