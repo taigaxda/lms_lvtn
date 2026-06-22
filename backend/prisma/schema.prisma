@@ -216,12 +216,19 @@ model announcements {
   tieuDe     String
   noiDung    String
   ngayTao    DateTime @default(now())
+  loaiThongBao        announcement_type @default(thong_bao)
 
   khoahoc khoahoc? @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
   nguoiDang  nguoidung @relation(fields: [idNguoiDang], references: [idNguoiDung])
 
   @@index([idKhoaHoc])
   @@index([idNguoiDang])
+}
+enum announcement_type {
+  thong_bao
+  bai_tap
+  bai_hoc
+  quiz
 }
 
 model groups {
