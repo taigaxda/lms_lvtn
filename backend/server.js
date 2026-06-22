@@ -13,6 +13,8 @@ import qlhvGiangVienRoutes from './routes/giangvien/hocvien.js'
 import baiTapGiangVien from './routes/giangvien/baitap.js'
 import baiTapHocVien from './routes/hocvien/baitap.js'
 import thongBaoGiangVienRoutes from './routes/giangvien/thongbao.js'
+import thongBaoHocVienRoutes from './routes/hocvien/thongbao.js'
+import thongBaoAdminRoutes from './routes/admin/thongbao.js'
 import cors from 'cors'
 
 const app = express()
@@ -36,6 +38,8 @@ app.use('/giangvien/qlhv',qlhvGiangVienRoutes)
 app.use('/giangvien/baitap',baiTapGiangVien)
 app.use('/hocvien/baitap',baiTapHocVien)
 app.use('/giangvien/thongbao',thongBaoGiangVienRoutes)
+app.use('/hocvien/thongbao',thongBaoHocVienRoutes)
+app.use('/admin/thongbao',thongBaoAdminRoutes)
 app.use('/', test)
 
 app.listen(PORT, () => {
