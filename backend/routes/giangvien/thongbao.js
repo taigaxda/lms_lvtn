@@ -3,10 +3,38 @@ import { prisma } from '../../prisma/client.js'
 import { checkGiangVien } from '../middleware.js'
 
 const router = express.Router()
+router.get('/hethong', checkGiangVien, async (req, res) => {
+    try {
+        const dsThongBaoHeThong = await prisma.announcements.findMany({
+            where: {
+                idKhoaHoc: null
+            },
+            orderBy: {
+                ngayTao: 'desc'
+            },
+            include: {
+                nguoiDang: {
+                    select: {
+                        hoTen: true,
+                        vaiTro: true
+                    }
+                }
+            }
+        })
+        return res.status(200).json({
+            success: true,
+            data: dsThongBaoHeThong,
+            message: "Lấy ds thông báo thành công"
+        })
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+})
 router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
     try {
         const idKhoaHoc = parseInt(req.params.idKhoaHoc)
-        if(isNaN(idKhoaHoc)){
+        if (isNaN(idKhoaHoc)) {
             return res.status(400).json({
                 success: false,
                 message: "ID lớp học không hợp lệ"
@@ -45,50 +73,37 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
         return res.status(500).json({ success: false, error: err.message });
     }
 })
-router.get('/hethong', checkGiangVien, async (req, res) => {
-    try {
-        const dsThongBaoHeThong = await prisma.announcements.findMany({
-            where: {
-                idKhoaHoc: null
-            },
-            orderBy: {
-                ngayTao: 'desc'
-            },
-            include: {
-                nguoiDang: {
-                    select: {
-                        hoTen: true,
-                        vaiTro: true
-                    }
-                }
-            }
-        })
-        return res.status(200).json({
-            success: true,
-            data: dsThongBaoHeThong,
-            message: "Lấy ds thông báo thành công"
-        })
-    }
-    catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
-})
+
 router.get('/chitiet/:idThongBao', checkGiangVien, async (req, res) => {
     try {
         const idThongBao = parseInt(req.params.idThongBao)
-        if(isNaN(idThongBao)){
+        if (isNaN(idThongBao)) {
             return res.status(400).json({
                 success: false,
                 message: "ID thông báo không hợp lệ"
             });
         }
         const tonTai = await prisma.announcements.findUnique({
-            where:{
+            where: {
                 idThongBao: idThongBao
+            },
+            include: {
+                nguoiDang: {
+                    select: {
+                        hoTen: true,
+                        vaiTro: true,
+                        email: true
+                    }
+                },
+                khoahoc: {
+                    select: {
+                        tenKhoaHoc: true
+                    }
+                }
             }
         })
-        if(!tonTai){
-             return res.status(404).json({
+        if (!tonTai) {
+            return res.status(404).json({
                 success: false,
                 message: "Không tìm thấy thông báo"
             });
@@ -109,19 +124,19 @@ router.post('/:idKhoaHoc', checkGiangVien, async (req, res) => {
         let { tieuDe, noiDung } = req.body
         tieuDe = tieuDe?.trim()
         noiDung = noiDung?.trim()
-        if(isNaN(idKhoaHoc)){
+        if (isNaN(idKhoaHoc)) {
             return res.status(400).json({
                 success: false,
                 message: "ID lớp học không hợp lệ"
             });
         }
-        if (!noiDung||noiDung.length===0) {
+        if (!noiDung || noiDung.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: "Thiếu nội dung thông báo"
             })
         }
-        if (!tieuDe || tieuDe.length===0) {
+        if (!tieuDe || tieuDe.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: "Thiếu tiêu đề thông báo"
@@ -138,7 +153,7 @@ router.post('/:idKhoaHoc', checkGiangVien, async (req, res) => {
             });
         }
         const thongBao = await prisma.announcements.create({
-            data:{
+            data: {
                 idKhoaHoc: idKhoaHoc,
                 idNguoiDang: idNguoiDang,
                 noiDung: noiDung,
@@ -165,11 +180,11 @@ router.post('/:idKhoaHoc', checkGiangVien, async (req, res) => {
         return res.status(500).json({ success: false, error: err.message });
     }
 })
-router.put('/:idThongBao',checkGiangVien,async(req,res)=>{
+router.put('/:idThongBao', checkGiangVien, async (req, res) => {
     try {
         const idThongBao = parseInt(req.params.idThongBao)
         let { tieuDe, noiDung } = req.body
-        if(isNaN(idThongBao)){
+        if (isNaN(idThongBao)) {
             return res.status(400).json({
                 success: false,
                 message: "ID thông báo không hợp lệ"
@@ -177,13 +192,13 @@ router.put('/:idThongBao',checkGiangVien,async(req,res)=>{
         }
         tieuDe = tieuDe?.trim()
         noiDung = noiDung?.trim()
-        if (!noiDung||noiDung.length===0) {
+        if (!noiDung || noiDung.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: "Thiếu nội dung thông báo"
             })
         }
-        if (!tieuDe || tieuDe.length===0) {
+        if (!tieuDe || tieuDe.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: "Thiếu tiêu đề thông báo"
@@ -215,7 +230,7 @@ router.put('/:idThongBao',checkGiangVien,async(req,res)=>{
             where: {
                 idThongBao: idThongBao
             },
-            data:{
+            data: {
                 noiDung: noiDung ?? tonTaiThongBao.noiDung,
                 tieuDe: tieuDe ?? tonTaiThongBao.tieuDe,
                 ngayTao: new Date()
@@ -231,11 +246,11 @@ router.put('/:idThongBao',checkGiangVien,async(req,res)=>{
         return res.status(500).json({ success: false, error: err.message });
     }
 })
-router.delete('/:idThongBao',checkGiangVien,async(req,res)=>{
-    try{
+router.delete('/:idThongBao', checkGiangVien, async (req, res) => {
+    try {
         const idThongBao = parseInt(req.params.idThongBao);
         const idNguoiDang = req.user.idNguoiDung;
-        if(isNaN(idThongBao)){
+        if (isNaN(idThongBao)) {
             return res.status(400).json({
                 success: false,
                 message: "ID thông báo không hợp lệ"
@@ -247,7 +262,7 @@ router.delete('/:idThongBao',checkGiangVien,async(req,res)=>{
                 idThongBao: idThongBao
             }
         })
-         if (!thongBao) {
+        if (!thongBao) {
             return res.status(404).json({
                 success: false,
                 message: "Không tìm thấy thông báo"
