@@ -38,19 +38,34 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     fetchData();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   Future<void> loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      hoTen = prefs.getString("hoTen") ?? "";
-      vaiTro = prefs.getString("vaiTro") ?? "";
-    });
+    if (mounted) {
+      setState(() {
+        hoTen = prefs.getString("hoTen") ?? "";
+        vaiTro = prefs.getString("vaiTro") ?? "";
+      });
+    }
   }
 
   Future<void> fetchData() async {
     try {
+      setState(() => isLoading = true);
+      
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
 
+      if (token == null || token.isEmpty) {
+        throw Exception("Chưa đăng nhập");
+      }
+
+      // ✅ Gọi API bài học
       final resBaiHoc = await http.get(
         Uri.parse(apiBaiHoc),
         headers: {
@@ -59,36 +74,91 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
         },
       );
 
-      final resQuiz = await http.get(
-        Uri.parse(apiQuiz),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-      );
-
-      if (resBaiHoc.statusCode == 200 && resQuiz.statusCode == 200) {
-        final dataBH = json.decode(resBaiHoc.body);
-        final dataQuiz = json.decode(resQuiz.body);
-        setState(() {
-          khoaHocs = dataBH["data"] ?? [];
-          quizChuaLam = dataQuiz["data"] ?? [];
-          isLoading = false;
-        });
-      } else {
-        throw Exception("Lỗi load API");
+      // ✅ Gọi API quiz (xử lý lỗi riêng)
+      try {
+        final resQuiz = await http.get(
+          Uri.parse(apiQuiz),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+        );
+        
+        if (resQuiz.statusCode == 200) {
+          final dataQuiz = json.decode(resQuiz.body);
+          if (mounted) {
+            setState(() {
+              quizChuaLam = dataQuiz["data"] ?? [];
+            });
+          }
+        } else {
+          print("⚠️ Lỗi quiz: ${resQuiz.statusCode}");
+          if (mounted) {
+            setState(() {
+              quizChuaLam = [];
+            });
+          }
+        }
+      } catch (e) {
+        print("⚠️ Lỗi quiz: $e");
+        if (mounted) {
+          setState(() {
+            quizChuaLam = [];
+          });
+        }
       }
+
+      // ✅ Xử lý bài học
+      if (resBaiHoc.statusCode == 200) {
+        final dataBH = json.decode(resBaiHoc.body);
+        if (mounted) {
+          setState(() {
+            khoaHocs = dataBH["data"] ?? [];
+            isLoading = false;
+          });
+        }
+      } else {
+        throw Exception("Lỗi load bài học: ${resBaiHoc.statusCode}");
+      }
+      
     } catch (e) {
-      print("Lỗi fetch: $e");
-      setState(() => isLoading = false);
+      print("❌ Lỗi fetch: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi tải dữ liệu: $e")),
+        );
+        setState(() => isLoading = false);
+      }
     }
   }
 
-  Widget _buildEmpty(String text) {
+  Widget _buildEmpty(String text, {String? subText}) {
     return Center(
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subText ?? "Hãy tiếp tục học tập nhé! 💪",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -100,14 +170,51 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
 
     final trangThai = progress?['trangThai'] ?? 'chua_hoc';
 
-    Color color = trangThai == "dang_hoc"
-        ? Colors.orange
-        : Colors.grey;
+    Color color;
+    String statusText;
+    IconData iconData;
+    
+    switch (trangThai) {
+      case "dang_hoc":
+        color = Colors.orange;
+        statusText = "Đang học";
+        iconData = Icons.play_circle;
+        break;
+      case "hoan_thanh":
+        color = Colors.green;
+        statusText = "Đã học";
+        iconData = Icons.check_circle;
+        break;
+      default:
+        color = Colors.grey;
+        statusText = "Chưa học";
+        iconData = Icons.play_circle_outline;
+    }
 
     return ListTile(
-      leading: Icon(Icons.play_circle, color: color),
-      title: Text(bh['tenBaiHoc'] ?? ''),
-      subtitle: Text("Trạng thái: $trangThai"),
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(0.1),
+        child: Icon(iconData, color: color),
+      ),
+      title: Text(
+        bh['tenBaiHoc'] ?? '',
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
+      subtitle: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          statusText,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         Navigator.push(
@@ -121,6 +228,9 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
   }
 
   Widget _buildKhoaHocCard(Map kh) {
+    final baihocs = kh['baihoc'] as List? ?? [];
+    if (baihocs.isEmpty) return const SizedBox.shrink();
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -131,22 +241,45 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               gradient: LinearGradient(
-                colors: [Colors.blue, Colors.blue.shade300],
+                colors: [Colors.blue, Colors.blueAccent],
               ),
             ),
-            child: Text(
-              kh['tenKhoaHoc'] ?? '',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Row(
+              children: [
+                const Icon(Icons.school, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    kh['tenKhoaHoc'] ?? '',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${baihocs.length} bài',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Column(
-            children: (kh['baihoc'] as List)
+            children: baihocs
                 .map((bh) => _buildBaiHocItem(bh, kh['idKhoaHoc']))
                 .toList(),
           ),
@@ -155,11 +288,33 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     );
   }
 
-  Widget _buildQuizItem(Map quiz,int idKhoaHoc) {
+  Widget _buildQuizItem(Map quiz, int idKhoaHoc) {
     return ListTile(
-      leading: const Icon(Icons.quiz, color: Colors.red),
-      title: Text(quiz['tenQuiz'] ?? ''),
-      subtitle: Text("Thời gian: ${quiz['thoiGianLamBai']} phút"),
+      leading: CircleAvatar(
+        backgroundColor: Colors.red.withOpacity(0.1),
+        child: const Icon(Icons.quiz, color: Colors.red),
+      ),
+      title: Text(
+        quiz['tenQuiz'] ?? '',
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
+      subtitle: Row(
+        children: [
+          const Icon(Icons.timer, size: 14, color: Colors.grey),
+          const SizedBox(width: 4),
+          Text(
+            "${quiz['thoiGianLamBai'] ?? 0} phút",
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(width: 12),
+          const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+          const SizedBox(width: 4),
+          Text(
+            _formatDate(quiz['ngayDenHan']),
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         Navigator.push(
@@ -171,8 +326,11 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
       },
     );
   }
-
+  
   Widget _buildQuizCard(Map kh) {
+    final quizzes = kh['quizzes'] as List? ?? [];
+    if (quizzes.isEmpty) return const SizedBox.shrink();
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -183,29 +341,60 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               gradient: LinearGradient(
-                colors: [Colors.red, Colors.red.shade300],
+                colors: [Colors.red, Colors.redAccent],
               ),
             ),
-            child: Text(
-              kh['tenKhoaHoc'] ?? '',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Row(
+              children: [
+                const Icon(Icons.quiz, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    kh['tenKhoaHoc'] ?? '',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${quizzes.length} quiz',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Column(
-            children: (kh['quizzes'] as List)
-                .map((q) => _buildQuizItem(q,kh['idKhoaHoc']))
+            children: quizzes
+                .map((q) => _buildQuizItem(q, kh['idKhoaHoc']))
                 .toList(),
           ),
         ],
       ),
     );
   }
+
+  String _formatDate(String? date) {
+    if (date == null) return "Không rõ";
+    final d = DateTime.tryParse(date);
+    if (d == null) return "Không rõ";
+    return "${d.day}/${d.month}/${d.year}";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,8 +405,8 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
         foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,
-          tabs: [
-            Tab(text: "Bài học",),
+          tabs: const [
+            Tab(text: "Bài học"),
             Tab(text: "Bài kiểm tra"),
           ],
           indicatorColor: Colors.white,
@@ -232,23 +421,28 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
               controller: _tabController,
               children: [
                 khoaHocs.isEmpty
-                    ? _buildEmpty("Không còn bài chưa học")
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: khoaHocs.length,
-                        itemBuilder: (context, index) {
-                          return _buildKhoaHocCard(khoaHocs[index]);
-                        },
+                    ? _buildEmpty("Không còn bài học nào chưa hoàn thành!")
+                    : RefreshIndicator(
+                        onRefresh: fetchData,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: khoaHocs.length,
+                          itemBuilder: (context, index) {
+                            return _buildKhoaHocCard(khoaHocs[index]);
+                          },
+                        ),
                       ),
-
                 quizChuaLam.isEmpty
-                    ? _buildEmpty("Không còn bài kiểm tra nào để làm")
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: quizChuaLam.length,
-                        itemBuilder: (context, index) {
-                          return _buildQuizCard(quizChuaLam[index]);
-                        },
+                    ? _buildEmpty("Không còn bài kiểm tra nào chưa làm!")
+                    : RefreshIndicator(
+                        onRefresh: fetchData,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: quizChuaLam.length,
+                          itemBuilder: (context, index) {
+                            return _buildQuizCard(quizChuaLam[index]);
+                          },
+                        ),
                       ),
               ],
             ),

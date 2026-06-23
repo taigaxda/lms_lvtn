@@ -145,10 +145,20 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
 router.get('/chualam', checkHocVien, async (req, res) => {
     try {
         const idNguoiDung = req.user.idNguoiDung;
+        
         const data = await prisma.khoahoc.findMany({
             where: {
                 dangky_khoahoc: {
                     some: { idNguoiDung }
+                },
+                quizzes: {
+                    some: {
+                        results: {
+                            none: { 
+                                idNguoiDung: idNguoiDung 
+                            }
+                        }
+                    }
                 }
             },
             select: {
@@ -156,24 +166,38 @@ router.get('/chualam', checkHocVien, async (req, res) => {
                 tenKhoaHoc: true,
                 quizzes: {
                     where: {
-                        quiz_results: {
-                            none: { idNguoiDung }
+                        results: {
+                            none: { 
+                                idNguoiDung: idNguoiDung 
+                            }
                         }
                     },
                     select: {
                         idQuiz: true,
                         tenQuiz: true,
-                        thoiGianLamBai: true
+                        thoiGianLamBai: true,
+                        ngayDenHan: true,
+                    },
+                    orderBy: {
+                        ngayTao: 'desc'
                     }
                 }
             }
         });
+        const filteredData = data.filter(khoaHoc => khoaHoc.quizzes.length > 0);
+        
         res.json({
             success: true,
-            data: data
+            data: filteredData,
+            total: filteredData.length
         });
+        
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Lỗi lấy quiz chưa làm:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });
 

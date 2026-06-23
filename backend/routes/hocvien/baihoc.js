@@ -7,38 +7,21 @@ const router = express.Router()
 router.get("/chuahoc", checkHocVien, async (req, res) => {
   try {
     const idNguoiDung = req.user.idNguoiDung;
+    
     const data = await prisma.khoahoc.findMany({
       where: {
         dangky_khoahoc: {
           some: { idNguoiDung },
         },
       },
-      select: {
-        idKhoaHoc: true,
-        tenKhoaHoc: true,
+      include: {
         baihoc: {
           where: {
-            OR: [
-              {
-                progress: {
-                  none: { idNguoiDung },
-                },
-              },
-              {
-                progress: {
-                  some: {
-                    idNguoiDung,
-                    trangThai: {
-                      in: ["chua_hoc", "dang_hoc"],
-                    },
-                  },
-                },
-              },
-            ],
-          },
-          include: {
             progress: {
-              where: { idNguoiDung },
+              none: {
+                idNguoiDung: idNguoiDung,
+                trangThai: "hoan_thanh",
+              },
             },
           },
           orderBy: {
@@ -47,13 +30,19 @@ router.get("/chuahoc", checkHocVien, async (req, res) => {
         },
       },
     });
+    const filteredData = data.filter(khoaHoc => khoaHoc.baihoc.length > 0);
+    
     res.json({
       success: true,
-      data: data
+      data: filteredData
     });
-
+    
   } catch (error) {
-    res.status(500).json({ success: false });
+    console.error("Lỗi lấy bài học chưa học:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 });
 
