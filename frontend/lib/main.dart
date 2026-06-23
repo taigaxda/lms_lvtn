@@ -9,6 +9,7 @@ import 'package:frontend/giangvien/lopHocLuuTruGV.dart';
 import 'package:frontend/admin/dashBoardAdminScreen.dart';
 import 'package:frontend/hocvien/lopHocLuuTruHV.dart';
 import 'package:frontend/hocvien/chuaHTHocVienScreen.dart';
+import 'package:frontend/admin/thongbao/thongBaoAdminScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 void main() async {
@@ -53,6 +54,7 @@ class MyApp extends StatelessWidget {
         '/dashBoardAdmin':(context)=> DashboardAdminScreen(),
         '/lopHocLuuTruHV': (context) => LopHocLuuTruHVScreen(),
         '/chuaHoanThanhHV': (context) => ChuaHTHocVienScreen(),
+        '/thongbaoAd': (context) => Thongbaoadminscreen(),
       },
     );
   }

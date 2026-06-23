@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/admin/classroom/thongBaoLopAdminScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:frontend/api.dart';
@@ -25,7 +26,7 @@ class _ChitietclassscreenState extends State<Chitietclassscreen> {
         Uri.parse("${ApiConfig.baseUrl}/admin/lophoc/${widget.idKhoaHoc}"),
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer $token"
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -161,6 +162,33 @@ class _ChitietclassscreenState extends State<Chitietclassscreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                Thongbaolopadminscreen(idKhoaHoc: widget.idKhoaHoc),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.notifications),
+                      label: const Text("Xem thông báo lớp"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),

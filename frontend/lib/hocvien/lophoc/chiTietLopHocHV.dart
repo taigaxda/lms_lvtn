@@ -7,6 +7,7 @@ import 'package:frontend/hocvien/menuUI/hocVienMenuBar.dart';
 import 'package:frontend/hocvien/lophoc/hocBaiScreen.dart';
 import 'package:frontend/hocvien/lophoc/danhSachBaiKTScreen.dart';
 import 'baitap/dsBaiTapHVScreen.dart';
+import '../thongbao/thongBaoHVScreen.dart';
 
 class ChiTietLopHocHVScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -21,6 +22,7 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
   bool isLoading = true;
   Map<String, dynamic>? lopHoc;
   List baiHocs = [];
+  int _selectedIndex = 0;
 
   final String apiUrl = '${ApiConfig.baseUrl}/hocvien';
   String hoTen = "";
@@ -120,6 +122,35 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
     await loadAllData();
   }
 
+  Future<void> openThongBaoScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Thongbaohvscreen(idKhoaHoc: widget.idKhoaHoc),
+      ),
+    );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        break;
+      case 1:
+        openDSBaiKiemTraScreen();
+        break;
+      case 2:
+        openDSBaiTapScreen();
+        break;
+      case 3:
+        openThongBaoScreen();
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,6 +165,32 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(onRefresh: loadAllData, child: _buildBody()),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Chi tiết',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.quiz),
+            label: 'Bài kiểm tra',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Bài tập',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Thông báo',
+          ),
+        ],
+      ),
     );
   }
 
@@ -143,6 +200,7 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -165,22 +223,24 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-
                 Text(
                   "Giảng viên: ${lopHoc?['nguoidung']?['hoTen'] ?? ""}",
                   style: const TextStyle(color: Colors.white70),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   "Danh mục: ${lopHoc?['danhMuc'] ?? ""}",
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                // ✅ Thêm thông tin học viên
+                const SizedBox(height: 6),
+                Text(
+                  "Học viên: $hoTen",
                   style: const TextStyle(color: Colors.white70),
                 ),
               ],
             ),
           ),
-
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Text(
@@ -192,38 +252,8 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(lopHoc?['moTa'] ?? "Không có mô tả"),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: ElevatedButton.icon(
-              onPressed: openDSBaiKiemTraScreen,
-              icon: const Icon(Icons.quiz),
-              label: const Text("Xem bài kiểm tra"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ElevatedButton.icon(
-              onPressed: openDSBaiTapScreen,
-              icon: const Icon(Icons.assignment),
-              label: const Text("Xem bài tập"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
+
+          // Danh sách bài học
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
             child: Text(
@@ -311,7 +341,6 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
                     ],
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-
                   onTap: () {
                     openHocBaiScreen(b);
                   },

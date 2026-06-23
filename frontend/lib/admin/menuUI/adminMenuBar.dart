@@ -41,6 +41,13 @@ class AdminMenuBar extends StatelessWidget {
               Navigator.pushReplacementNamed(context, '/users');
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text("Quản lý thông báo"),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/thongbaoAd');
+            },
+          ),
 
           ListTile(
             leading: const Icon(Icons.dashboard),

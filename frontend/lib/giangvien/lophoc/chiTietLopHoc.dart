@@ -8,6 +8,7 @@ import 'addBaiHocScreen.dart';
 import 'package:frontend/giangvien/baikiemtra/baiKiemTraGVScreen.dart';
 import 'package:frontend/giangvien/quanlyhocvien/qlhvGVScreen.dart';
 import 'package:frontend/giangvien/baitap/baiTapGVScreen.dart';
+import 'package:frontend/giangvien/thongbao/thongBaoGVScreen.dart';
 
 class ChiTietLopHocScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -165,7 +166,16 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
           builder: (_) => QlhvGVScreen(idKhoaHoc: widget.idKhoaHoc),
         ),
       );
-    } else {
+    }
+    else if (index == 4) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Thongbaogvscreen(idKhoaHoc: widget.idKhoaHoc),
+        ),
+      );
+    } 
+    else {
        Navigator.push(
         context,
         MaterialPageRoute(
@@ -215,6 +225,10 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.people_outline),
             label: "Quản lý học viên",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: "Thông báo",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.book),
