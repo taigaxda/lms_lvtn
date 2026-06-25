@@ -263,7 +263,7 @@ class _NopbaitaphvscreenState extends State<Nopbaitaphvscreen> {
   Widget oldSubmissionPreview() {
     if (!isEdit) return const SizedBox();
 
-    final file = widget.submission!["fileNop"];
+    // final file = widget.submission!["fileNop"];
 
     return Container(
       padding: const EdgeInsets.all(10),

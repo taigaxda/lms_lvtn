@@ -24,6 +24,13 @@ router.get("/chuahoc", checkHocVien, async (req, res) => {
               },
             },
           },
+          include:{
+            progress:{
+              where:{
+                idNguoiDung: idNguoiDung
+              }
+            }
+          },
           orderBy: {
             thuTu: "asc",
           },

@@ -8,6 +8,7 @@ import 'package:frontend/hocvien/lophoc/hocBaiScreen.dart';
 import 'package:frontend/hocvien/lophoc/danhSachBaiKTScreen.dart';
 import 'baitap/dsBaiTapHVScreen.dart';
 import '../thongbao/thongBaoHVScreen.dart';
+import 'package:frontend/comments/commentsScreen.dart';
 
 class ChiTietLopHocHVScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -173,10 +174,7 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Chi tiết',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Chi tiết'),
           BottomNavigationBarItem(
             icon: Icon(Icons.quiz),
             label: 'Bài kiểm tra',
@@ -232,7 +230,6 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
                   "Danh mục: ${lopHoc?['danhMuc'] ?? ""}",
                   style: const TextStyle(color: Colors.white70),
                 ),
-                // ✅ Thêm thông tin học viên
                 const SizedBox(height: 6),
                 Text(
                   "Học viên: $hoTen",
@@ -252,8 +249,6 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(lopHoc?['moTa'] ?? "Không có mô tả"),
           ),
-
-          // Danh sách bài học
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
             child: Text(
@@ -340,7 +335,22 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
                       ),
                     ],
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.comment, color: Colors.blue),
+                        onPressed: () {
+                          Navigator.push(
+                            context, 
+                            MaterialPageRoute(builder: (_)=>Commentsscreen(idBaiHoc: b['idBaiHoc']))
+                          );
+                        },
+                        tooltip: 'Bình luận',
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 16),
+                    ],
+                  ),
                   onTap: () {
                     openHocBaiScreen(b);
                   },

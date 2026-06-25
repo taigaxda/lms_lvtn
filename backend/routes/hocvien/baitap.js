@@ -15,12 +15,72 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const upload = multer({ dest: uploadDir });
+router.get('/chuanop', checkHocVien, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung;
+        const now = new Date()
+        const dsLopHoc = await prisma.khoahoc.findMany({
+            where: {
+                dangky_khoahoc: {
+                    some: { idNguoiDung }
+                }
+            },
+            include: {
+                assignments:{
+                    where:{
+                        submissions:{
+                            none:{
+                                idNguoiDung: idNguoiDung
+                            }
+                        }
+                    },
+                    include:{
+                        submissions: {
+                            where: {
+                                idNguoiDung: idNguoiDung
+                            },
+                            include: {
+                                grades: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        hanNop: 'asc'
+                    }
+                }
+            }
+        })
+        const filteredData = dsLopHoc
+            .filter(khoaHoc => khoaHoc.assignments.length > 0)
+            .map(khoaHoc => ({
+                ...khoaHoc,
+                assignments: khoaHoc.assignments.map(assignment => ({
+                    ...assignment,
+                    isQuaHan: new Date(assignment.hanNop) < now,
+                    conLai: Math.ceil((new Date(assignment.hanNop) - now) / (1000 * 60 * 60 * 24))
+                }))
+            }));
+        
+        return res.status(200).json({
+            success: true,
+            message: "Lấy danh sách bài tập chưa nộp thành công",
+            data: filteredData,
+            total: filteredData.length
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+})
 
 router.get('/chitiet/:idAssignment', checkHocVien, async (req, res) => {
     try {
         const idAssignment = parseInt(req.params.idAssignment);
         const idNguoiDung = req.user.idNguoiDung;
-        
+
         const assignment = await prisma.assignments.findUnique({
             where: {
                 idAssignment: idAssignment
@@ -36,14 +96,14 @@ router.get('/chitiet/:idAssignment', checkHocVien, async (req, res) => {
                 }
             }
         });
-        
+
         if (!assignment) {
             return res.status(404).json({
                 success: false,
                 message: "Không tìm thấy bài tập"
             });
         }
-        
+
         return res.status(200).json({
             success: true,
             message: "Lấy chi tiết bài tập thành công",

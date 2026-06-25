@@ -58,16 +58,33 @@ class _Dsbaitaphvscreen extends State<Dsbaitaphvscreen> {
     }
   }
 
+  bool isQuaHan(String? hanNop) {
+    if (hanNop == null) return false;
+    final han = DateTime.tryParse(hanNop);
+    if (han == null) return false;
+    return DateTime.now().isAfter(han);
+  }
+
   String getTrangThai(Map b) {
     final submissions = b['submissions'];
-    if (submissions == null || submissions.isEmpty) {
-      return "Chưa nộp";
+    final hanNop = b['hanNop'];
+    final daNop = submissions != null && submissions.isNotEmpty;
+    final daQuaHan = isQuaHan(hanNop);
+
+    if (daNop) {
+      final sub = submissions[0];
+      if (sub['grades'] != null) {
+        return "Đã chấm";
+      }
+      if (daQuaHan) {
+        return "Chờ chấm (quá hạn)";
+      }
+      return "Đã nộp";
     }
-    final sub = submissions[0];
-    if (sub['grades'] != null) {
-      return "Đã chấm";
+    if (daQuaHan) {
+      return "Quá hạn";
     }
-    return "Đã nộp";
+    return "Chưa nộp";
   }
 
   String formatDate(String? date) {
@@ -87,9 +104,28 @@ class _Dsbaitaphvscreen extends State<Dsbaitaphvscreen> {
       case "Đã chấm":
         return Colors.green;
       case "Đã nộp":
+        return Colors.blue;
+      case "Chờ chấm (quá hạn)":
         return Colors.orange;
+      case "Quá hạn":
+        return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  IconData getIcon(String status) {
+    switch (status) {
+      case "Đã chấm":
+        return Icons.check_circle;
+      case "Đã nộp":
+        return Icons.cloud_done;
+      case "Chờ chấm (quá hạn)":
+        return Icons.hourglass_top;
+      case "Quá hạn":
+        return Icons.cancel;
+      default:
+        return Icons.assignment;
     }
   }
 
@@ -105,71 +141,113 @@ class _Dsbaitaphvscreen extends State<Dsbaitaphvscreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: loadBaiTap,
-              child: ListView.builder(
-                itemCount: dsBaiTap.length,
-                itemBuilder: (context, index) {
-                  final bt = dsBaiTap[index];
-                  final status = getTrangThai(bt);
-                  final color = getColor(status);
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: color.withOpacity(0.1),
-                        child: Icon(Icons.assignment, color: color),
+              child: dsBaiTap.isEmpty
+                  ? const Center(
+                      child: Text(
+                        "Chưa có bài tập nào",
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
-                      title: Text(
-                        bt['tieuDe'] ?? "",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Hạn: ${formatDate(bt["hanNop"])}"),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                    )
+                  : ListView.builder(
+                      itemCount: dsBaiTap.length,
+                      itemBuilder: (context, index) {
+                        final bt = dsBaiTap[index];
+                        final status = getTrangThai(bt);
+                        final color = getColor(status);
+                        final icon = getIcon(status);
+                        final isOverdue =
+                            status == "Quá hạn" ||
+                            status == "Chờ chấm (quá hạn)";
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: color.withOpacity(0.1),
+                              child: Icon(icon, color: color),
                             ),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              status,
+                            title: Text(
+                              bt['tieuDe'] ?? "",
                               style: TextStyle(
-                                color: color,
-                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
+                                color: isOverdue ? Colors.red : null,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChiTietBaiTapHVScreen(
-                              // baiTap: bt
-                              idAssignment: bt['idAssignment'],
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.access_time,
+                                      size: 14,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "Hạn: ${formatDate(bt["hanNop"])}",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: isOverdue
+                                            ? Colors.red
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                    if (isOverdue) ...[
+                                      const SizedBox(width: 8),
+                                      const Icon(
+                                        Icons.warning,
+                                        size: 14,
+                                        color: Colors.red,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    status,
+                                    style: TextStyle(
+                                      color: color,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ChiTietBaiTapHVScreen(
+                                    idAssignment: bt['idAssignment'],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },
                     ),
-                  );
-                },
-              ),
             ),
     );
   }

@@ -85,6 +85,13 @@ class _LopHocLuuTruHVScreenState extends State<LopHocLuuTruHVScreen> {
       drawer: Hocvienmenubar(hoTen: hoTen, vaiTro: vaiTro),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
+          : classes.isEmpty
+          ? const Center(
+              child: Text(
+                "Không có lớp học lưu trữ",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            )
           : ListView.builder(
               itemCount: classes.length,
               itemBuilder: (context, index) {

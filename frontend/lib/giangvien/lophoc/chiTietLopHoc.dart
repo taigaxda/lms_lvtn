@@ -9,6 +9,7 @@ import 'package:frontend/giangvien/baikiemtra/baiKiemTraGVScreen.dart';
 import 'package:frontend/giangvien/quanlyhocvien/qlhvGVScreen.dart';
 import 'package:frontend/giangvien/baitap/baiTapGVScreen.dart';
 import 'package:frontend/giangvien/thongbao/thongBaoGVScreen.dart';
+import 'package:frontend/comments/commentsScreen.dart';
 
 class ChiTietLopHocScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -348,6 +349,16 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                         onPressed: (){
                           openEditBaiHoc(b);
                         },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.comment, color: Colors.blue),
+                        onPressed: () {
+                          Navigator.push(
+                            context, 
+                            MaterialPageRoute(builder: (_)=>Commentsscreen(idBaiHoc: b['idBaiHoc']))
+                          );
+                        },
+                        tooltip: 'Bình luận',
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
