@@ -57,6 +57,128 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
         })
     }
 })
+router.get('/dsbainop/:idAssignment', checkGiangVien, async (req, res) => {
+    try {
+        const idGiangVien = req.user.idNguoiDung;
+        const idAssignment = parseInt(req.params.idAssignment);
+        if (isNaN(idAssignment)) {
+            return res.status(400).json({
+                success: false,
+                message: "ID bài tập không hợp lệ"
+            });
+        }
+        
+        const assignment = await prisma.assignments.findFirst({
+            where: {
+                idAssignment: idAssignment,
+                khoahoc: {
+                    idGiangVien: idGiangVien
+                }
+            },
+            include: {
+                khoahoc: true
+            }
+        });
+        
+        if (!assignment) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy bài tập hoặc bạn không có quyền"
+            });
+        }
+        
+        const idKhoaHoc = assignment.khoahoc.idKhoaHoc;
+        
+        const hocViens = await prisma.dangky_khoahoc.findMany({
+            where: { idKhoaHoc },
+            include: {
+                nguoidung: {
+                    select: {
+                        idNguoiDung: true,
+                        hoTen: true,
+                        email: true
+                    }
+                }
+            }
+        });
+        
+        const submissions = await prisma.submissions.findMany({
+            where: { idAssignment },
+            include: {
+                grades: true
+            }
+        });
+        
+        const mapSubmissions = new Map();
+        submissions.forEach(s => {
+            mapSubmissions.set(s.idNguoiDung, s);
+        });
+        
+        const finalData = hocViens.map(hv => {
+            const sub = mapSubmissions.get(hv.idNguoiDung);
+            return {
+                idNguoiDung: hv.idNguoiDung,
+                hoTen: hv.nguoidung.hoTen,
+                email: hv.nguoidung.email,
+                daNop: sub ? true : false,
+                fileNop: sub ? sub.fileNop : null,
+                noiDung: sub ? sub.noiDung : null,
+                ngayNop: sub ? sub.ngayNop : null,
+                grade: sub?.grades ? {
+                    diem: sub.grades.diem,
+                    nhanXet: sub.grades.nhanXet,
+                    ngayCham: sub.grades.ngayCham
+                } : null,
+                trangThai: sub ? (sub.grades ? "Đã chấm" : "Đã nộp") : "Chưa nộp"
+            };
+        });
+        finalData.sort((a, b) => {
+            if (!a.daNop && b.daNop) return -1;
+            if (a.daNop && !b.daNop) return 1;
+            if (a.grade && !b.grade) return 1;
+            if (!a.grade && b.grade) return -1;
+            return 0;
+        });
+        
+        const stats = {
+            tongHocVien: finalData.length,
+            daNop: finalData.filter(hv => hv.daNop).length,
+            chuaNop: finalData.filter(hv => !hv.daNop).length,
+            daCham: finalData.filter(hv => hv.grade).length,
+            chuaCham: finalData.filter(hv => hv.daNop && !hv.grade).length,
+            diemCaoNhat: (() => {
+                const diems = finalData.filter(hv => hv.grade).map(hv => hv.grade.diem);
+                return diems.length > 0 ? Math.max(...diems) : 0;
+            })(),
+            diemThapNhat: (() => {
+                const diems = finalData.filter(hv => hv.grade).map(hv => hv.grade.diem);
+                return diems.length > 0 ? Math.min(...diems) : 0;
+            })(),
+            diemTrungBinh: (() => {
+                const diems = finalData.filter(hv => hv.grade).map(hv => hv.grade.diem);
+                return diems.length > 0 ? diems.reduce((a, b) => a + b, 0) / diems.length : 0;
+            })()
+        };
+        
+        res.status(200).json({
+            success: true,
+            data: finalData,
+            stats: stats,
+            assignment: {
+                idAssignment: assignment.idAssignment,
+                tieuDe: assignment.tieuDe,
+                hanNop: assignment.hanNop
+            }
+        });
+        
+    } catch (err) {
+        console.error("Lỗi lấy danh sách bài nộp:", err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+});
 router.post('/:idKhoaHoc',checkGiangVien,upload.single('fileDinhKem'), async (req, res)=>{
     try{
         const idKhoaHoc = parseInt(req.params.idKhoaHoc)

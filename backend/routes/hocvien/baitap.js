@@ -153,7 +153,6 @@ router.get('/:idKhoaHoc', checkHocVien, async (req, res) => {
         })
     }
 })
-
 router.post('/:idAssignment/nopbai', checkHocVien, upload.single('fileNop'), async (req, res) => {
     try {
         const idAssignment = parseInt(req.params.idAssignment);

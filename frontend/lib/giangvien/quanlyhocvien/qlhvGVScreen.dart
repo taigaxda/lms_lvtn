@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/api.dart';
 import 'qldiemGVScreen.dart';
+import 'qldiemBTGVScreen.dart';
 
 class QlhvGVScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -114,25 +115,60 @@ class _QlhvGVScreenState extends State<QlhvGVScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.bar_chart,color: Colors.white,),
-                      label: const Text("Xem điểm bài kiểm tra",style: TextStyle(color: Colors.white),),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: Colors.green,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                QlDiemGVScreen(idKhoaHoc: widget.idKhoaHoc),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.quiz, color: Colors.white),
+                          label: const Text(
+                            "Điểm kiểm tra",
+                            style: TextStyle(color: Colors.white),
                           ),
-                        );
-                      },
-                    ),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    QlDiemGVScreen(idKhoaHoc: widget.idKhoaHoc),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.assignment, color: Colors.white),
+                          label: const Text(
+                            "Điểm bài tập",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: Colors.purple,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    Qldiembtgvscreen(idKhoaHoc: widget.idKhoaHoc),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Padding(

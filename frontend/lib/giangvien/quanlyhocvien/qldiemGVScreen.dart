@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // 🔥 kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/api.dart';
@@ -43,13 +43,7 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
     var excel = Excel.createExcel();
     Sheet sheet = excel['Sheet1'];
 
-    sheet.appendRow([
-      "STT",
-      "Họ tên",
-      "Email",
-      "Điểm",
-      "Trạng thái",
-    ]);
+    sheet.appendRow(["STT", "Họ tên", "Email", "Điểm", "Trạng thái"]);
 
     for (int i = 0; i < list.length; i++) {
       final item = list[i];
@@ -71,22 +65,20 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
         ..setAttribute("download", "bang_diem.xlsx")
         ..click();
       html.Url.revokeObjectUrl(url);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã tải file xuống")),
-      );
-    }
-    else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Đã tải file xuống")));
+    } else {
       final dir = await getApplicationDocumentsDirectory();
       final file = File("${dir.path}/bang_diem.xlsx");
       await file.writeAsBytes(bytes);
       await OpenFilex.open(file.path);
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: "Bảng điểm bài kiểm tra",
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Đã lưu file: ${file.path}")),
-      );
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: "Bảng điểm bài kiểm tra");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Đã lưu file: ${file.path}")));
     }
   }
 
@@ -212,8 +204,8 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
                 foregroundColor: Colors.white,
               ),
             ),
-          )
-        ]
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -241,6 +233,16 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
               },
             ),
           ),
+          if (quizzes.isEmpty && !isLoading)
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Text(
+                  "Không có bài kiểm tra nào",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
+            ),
           Container(
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(12),
@@ -272,52 +274,59 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : list.isEmpty
-                    ? const Center(child: Text("Chưa có dữ liệu"))
-                    : RefreshIndicator(
-                        onRefresh: () => loadDiem(selectedQuiz!),
-                        child: ListView.builder(
-                          itemCount: list.length,
-                          itemBuilder: (context, index) {
-                            final item = list[index];
+                ? const Center(child: Text("Chưa có dữ liệu"))
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      if (selectedQuiz != null) {
+                        await loadDiem(selectedQuiz!);
+                      }
+                    },
+                    child: ListView.builder(
+                      itemCount: list.length,
+                      itemBuilder: (context, index) {
+                        final item = list[index];
 
-                            return Card(
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Colors.blue,
-                                  child: Text(
-                                    "${index + 1}",
-                                    style: const TextStyle(color: Colors.white),
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.blue,
+                              child: Text(
+                                "${index + 1}",
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            title: Text(
+                              item['hoTen'] ?? "",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(item['email'] ?? ""),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  item['diemSo'] != null
+                                      ? "${item['diemSo']}"
+                                      : "Chưa làm",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: getColor(item['diemSo']),
                                   ),
                                 ),
-                                title: Text(
-                                  item['hoTen'] ?? "",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(item['email'] ?? ""),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      item['diemSo'] != null
-                                          ? "${item['diemSo']}"
-                                          : "Chưa làm",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: getColor(item['diemSo']),
-                                      ),
-                                    ),
-                                    Text(item['trangThai'] ?? ""),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-          )
+                                Text(item['trangThai'] ?? ""),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
         ],
       ),
     );

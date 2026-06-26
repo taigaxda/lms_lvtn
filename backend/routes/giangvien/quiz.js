@@ -32,7 +32,7 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
             },
             include: {
                 questions: {
-                    include:{
+                    include: {
                         answers: true
                     }
                 }
@@ -56,6 +56,12 @@ router.get('/diemhv/:idQuiz', checkGiangVien, async (req, res) => {
     try {
         const idGiangVien = req.user.idNguoiDung
         const idQuiz = parseInt(req.params.idQuiz)
+        if (isNaN(idQuiz)) {
+            return res.status(400).json({
+                success: false,
+                message: "ID quiz không hợp lệ"
+            });
+        }
         const quiz = await prisma.quizzes.findFirst({
             where: {
                 idQuiz,
@@ -68,7 +74,7 @@ router.get('/diemhv/:idQuiz', checkGiangVien, async (req, res) => {
             }
         })
         if (!quiz) {
-            return res.status(403).json({
+            return res.status(404).json({
                 success: false,
                 message: "Không có quyền xem điểm"
             })
@@ -109,10 +115,25 @@ router.get('/diemhv/:idQuiz', checkGiangVien, async (req, res) => {
             if (b.diemSo == null) return -1
             return b.diemSo - a.diemSo
         })
-        res.json({
+        const diems = finalData.filter(hv => hv.diemSo != null).map(hv => hv.diemSo);
+        const stats = {
+            tongHocVien: finalData.length,
+            daLam: finalData.filter(hv => hv.trangThai === "Đã làm").length,
+            chuaLam: finalData.filter(hv => hv.trangThai === "Chưa làm").length,
+            diemCaoNhat: diems.length > 0 ? Math.max(...diems) : 0,
+            diemThapNhat: diems.length > 0 ? Math.min(...diems) : 0,
+            diemTrungBinh: diems.length > 0 ? diems.reduce((a, b) => a + b, 0) / diems.length : 0
+        };
+        res.status(200).json({
             success: true,
-            data: finalData
-        })
+            data: finalData,
+            stats: stats,
+            quiz: {
+                idQuiz: quiz.idQuiz,
+                tenQuiz: quiz.tenQuiz,
+                ngayDenHan: quiz.ngayDenHan
+            }
+        });
     }
     catch (err) {
         res.status(500).json({
@@ -214,12 +235,12 @@ router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
                 error: "Quiz không tồn tại"
             })
         }
-        const soCauHienTai= await prisma.quiz_questions.count({
-            where:{
+        const soCauHienTai = await prisma.quiz_questions.count({
+            where: {
                 idQuiz
             }
         })
-        const tongSoCau = soCauHienTai+ questions.length
+        const tongSoCau = soCauHienTai + questions.length
         const diemMoiCauHoi = tongDiem / tongSoCau;
         await prisma.quiz_questions.updateMany({
             where: { idQuiz },
@@ -446,11 +467,11 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
         }
         let parsedNgayDenHan;
         if (ngayDenHan !== undefined) {
-            if(ngayDenHan === null || ngayDenHan === "") {
+            if (ngayDenHan === null || ngayDenHan === "") {
                 parsedNgayDenHan = null;
             }
-            else{
-                 const deadline = new Date(ngayDenHan);
+            else {
+                const deadline = new Date(ngayDenHan);
 
                 if (isNaN(deadline.getTime())) {
                     return res.status(400).json({
@@ -469,7 +490,7 @@ router.put('/:idQuiz', checkGiangVien, async (req, res) => {
                 parsedNgayDenHan = deadline;
             }
         }
-        
+
         if (!quiz) {
             return res.status(404).json({
                 success: false,
