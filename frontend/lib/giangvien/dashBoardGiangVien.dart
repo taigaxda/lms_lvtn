@@ -19,6 +19,9 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
   List recentClasses = [];
   List topClasses = [];
   List progressStats = [];
+  List upcomingDeadlines = [];
+  List quizzesWithoutResults = [];
+  Map<String, dynamic> avgScores = {};
 
   bool isLoading = true;
 
@@ -45,13 +48,13 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
   Future<void> fetchDashboard() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt("userId");
+      final token = prefs.getString("token");
 
       final response = await http.get(
         Uri.parse(apiUrl),
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId != null ? userId.toString() : "",
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -63,27 +66,37 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
           recentClasses = data["recentClasses"] ?? [];
           topClasses = data["topClasses"] ?? [];
           progressStats = data["progressStats"] ?? [];
+          upcomingDeadlines = data["upcomingDeadlines"] ?? [];
+          quizzesWithoutResults = data["quizzesWithoutResults"] ?? [];
+          avgScores = data["avgScores"] ?? {};
           isLoading = false;
         });
       } else {
-        throw Exception("Lỗi load dashboard");
+        throw Exception("Lỗi load dashboard: ${response.statusCode}");
       }
     } catch (e) {
-      print(e);
+      print("Lỗi fetch dashboard: $e");
       setState(() {
         isLoading = false;
       });
     }
   }
 
-  Widget buildStatCard(String title, dynamic value, IconData icon) {
+  Widget buildStatCard(
+    String title,
+    dynamic value,
+    IconData icon, {
+    Color? color,
+  }) {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.all(8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.blue, Colors.lightBlueAccent],
+          gradient: LinearGradient(
+            colors: color != null
+                ? [color, color.withOpacity(0.7)]
+                : [Colors.blue, Colors.lightBlueAccent],
           ),
           borderRadius: BorderRadius.circular(15),
         ),
@@ -108,7 +121,7 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
 
   Widget buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       child: Text(
         title,
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -118,7 +131,12 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
 
   Widget buildPieChart() {
     if (progressStats.isEmpty) {
-      return const Center(child: Text("Không có dữ liệu"));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Text("Chưa có dữ liệu tiến độ"),
+        ),
+      );
     }
 
     return SizedBox(
@@ -128,30 +146,35 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
           sectionsSpace: 2,
           centerSpaceRadius: 40,
           sections: progressStats.map((data) {
-            final value = (data['_count'] as int).toDouble();
+            final value = (data['count'] as int).toDouble();
             final status = data['trangThai'];
             Color color;
+            String label;
             switch (status) {
               case 'hoan_thanh':
                 color = Colors.green;
+                label = "Đã học";
                 break;
               case 'dang_hoc':
                 color = Colors.orange;
+                label = "Đang học";
                 break;
               case 'chua_hoc':
                 color = Colors.blue;
+                label = "Chưa học";
                 break;
               default:
                 color = Colors.grey;
+                label = status;
             }
 
             return PieChartSectionData(
               value: value,
               color: color,
-              title: "$status\n${value.toInt()}",
+              title: "$label\n${value.toInt()}",
               radius: 60,
               titleStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -165,8 +188,52 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
   Widget buildClassItem(Map c) {
     return ListTile(
       leading: const Icon(Icons.class_),
-      title: Text(c['tenKhoaHoc']),
-      subtitle: Text("Code: ${c['code'] ?? ''}"),
+      title: Text(c['tenKhoaHoc'] ?? ''),
+      subtitle: Text(
+        "Code: ${c['code'] ?? ''} • ${c['totalStudents'] ?? 0} HV",
+      ),
+    );
+  }
+
+  Widget buildDeadlineItem(Map deadline) {
+    final hanNop = DateTime.tryParse(deadline['hanNop'] ?? '');
+    final conLai = hanNop != null
+        ? hanNop.difference(DateTime.now()).inDays
+        : 0;
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: conLai <= 1
+            ? Colors.red.withOpacity(0.1)
+            : Colors.orange.withOpacity(0.1),
+        child: Icon(
+          Icons.assignment,
+          color: conLai <= 1 ? Colors.red : Colors.orange,
+        ),
+      ),
+      title: Text(
+        deadline['tieuDe'] ?? '',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        "${deadline['tenKhoaHoc'] ?? ''} • Còn $conLai ngày",
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: Text(
+        "${deadline['totalSubmissions'] ?? 0} bài nộp",
+        style: const TextStyle(fontSize: 12, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget buildQuizItem(Map quiz) {
+    return ListTile(
+      leading: const Icon(Icons.quiz, color: Colors.purple),
+      title: Text(
+        quiz['tenQuiz'] ?? '',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(quiz['tenKhoaHoc'] ?? ''),
     );
   }
 
@@ -186,6 +253,12 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
             );
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: fetchDashboard,
+          ),
+        ],
       ),
       drawer: GiangVienMenuBar(hoTen: hoTen, vaiTro: vaiTro),
       body: isLoading
@@ -195,6 +268,7 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
               child: ListView(
                 children: [
                   const SizedBox(height: 10),
+
                   Row(
                     children: [
                       buildStatCard(
@@ -209,6 +283,7 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
                       ),
                     ],
                   ),
+
                   Row(
                     children: [
                       buildStatCard(
@@ -223,8 +298,24 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
                       ),
                     ],
                   ),
+                  Row(
+                    children: [
+                      buildStatCard(
+                        "Bài tập",
+                        overview['totalAssignments'] ?? 0,
+                        Icons.assignment,
+                        color: Colors.purple,
+                      ),
+                      buildStatCard(
+                        "Chưa chấm",
+                        overview['pendingSubmissions'] ?? 0,
+                        Icons.pending,
+                        color: Colors.orange,
+                      ),
+                    ],
+                  ),
 
-                  buildSectionTitle("Biểu đồ tiến độ"),
+                  buildSectionTitle("Tiến độ học tập"),
                   Container(
                     margin: const EdgeInsets.all(12),
                     padding: const EdgeInsets.all(16),
@@ -238,22 +329,166 @@ class _DashboardGVScreenState extends State<DashboardGVScreen> {
                         ),
                       ],
                     ),
-                    child: buildPieChart(),
-                  ),
-
-                  buildSectionTitle("Lớp học mới"),
-                  ...recentClasses.map((c) => buildClassItem(c)).toList(),
-
-                  buildSectionTitle("Lớp đông nhất"),
-                  ...topClasses.map(
-                    (c) => ListTile(
-                      title: Text(c['tenKhoaHoc']),
-                      trailing: Text("${c['totalStudents']} HV"),
+                    child: Column(
+                      children: [
+                        buildPieChart(),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 16,
+                          children: [
+                            _buildLegendItem(Colors.blue, "Chưa học"),
+                            _buildLegendItem(Colors.orange, "Đang học"),
+                            _buildLegendItem(Colors.green, "Đã học"),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
+
+                  if (avgScores.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.assessment,
+                                  color: Colors.blue,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Thống kê điểm bài tập",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildScoreItem(
+                                  "Điểm TB",
+                                  avgScores['avg']?.toStringAsFixed(1) ?? '0',
+                                  Colors.blue,
+                                ),
+                                _buildScoreItem(
+                                  "Cao nhất",
+                                  avgScores['max']?.toStringAsFixed(1) ?? '0',
+                                  Colors.green,
+                                ),
+                                _buildScoreItem(
+                                  "Thấp nhất",
+                                  avgScores['min']?.toStringAsFixed(1) ?? '0',
+                                  Colors.red,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Chỉ tính trên các bài tập đã chấm điểm",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade500,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  if (recentClasses.isNotEmpty) ...[
+                    buildSectionTitle("Lớp học mới"),
+                    ...recentClasses.map((c) => buildClassItem(c)).toList(),
+                  ],
+
+                  if (upcomingDeadlines.isNotEmpty) ...[
+                    buildSectionTitle("Bài tập sắp hết hạn"),
+                    ...upcomingDeadlines
+                        .map((d) => buildDeadlineItem(d))
+                        .toList(),
+                  ],
+
+                  if (quizzesWithoutResults.isNotEmpty) ...[
+                    buildSectionTitle("Quiz chưa có ai làm"),
+                    ...quizzesWithoutResults
+                        .map((q) => buildQuizItem(q))
+                        .toList(),
+                  ],
+
+                  if (topClasses.isNotEmpty) ...[
+                    buildSectionTitle("Lớp đông nhất"),
+                    ...topClasses
+                        .map(
+                          (c) => ListTile(
+                            leading: const Icon(Icons.emoji_events),
+                            title: Text(c['tenKhoaHoc'] ?? ''),
+                            trailing: Text(
+                              "${c['totalStudents'] ?? 0} học viên",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ],
+
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildScoreItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
     );
   }
 }

@@ -58,45 +58,145 @@ router.get('/luutru', checkGiangVien, async (req, res) => {
     }
 });
 
+// router.get('/dashboard', checkGiangVien, async (req, res) => {
+//   try {
+//     const idGiangVien = req.user.idNguoiDung
+//     const totalClasses = await prisma.khoahoc.count({
+//       where: { idGiangVien: idGiangVien }
+//     })
+
+//     const totalStudents = await prisma.dangky_khoahoc.count({
+//       where: {
+//         khoahoc: { idGiangVien: idGiangVien }
+//       }
+//     })
+
+//     const totalLessons = await prisma.baihoc.count({
+//       where: {
+//         khoahoc: { idGiangVien: idGiangVien }
+//       }
+//     })
+
+//     const totalQuizzes = await prisma.quizzes.count({
+//       where: {
+//         khoahoc: { idGiangVien: idGiangVien }
+//       }
+//     })
+
+//     const recentClasses = await prisma.khoahoc.findMany({
+//       where: { idGiangVien: idGiangVien },
+//       orderBy: { ngayTao: 'desc' },
+//       take: 5,
+//       select: {
+//         idKhoaHoc: true,
+//         tenKhoaHoc: true,
+//         code: true,
+//         ngayTao: true
+//       }
+//     })
+
+//     const topClasses = await prisma.khoahoc.findMany({
+//       where: { idGiangVien: idGiangVien },
+//       include: {
+//         _count: {
+//           select: { dangky_khoahoc: true }
+//         }
+//       },
+//       orderBy: {
+//         dangky_khoahoc: {
+//           _count: 'desc'
+//         }
+//       },
+//       take: 5
+//     })
+
+//     const progressStats = await prisma.progress.groupBy({
+//       by: ['trangThai'],
+//       _count: true,
+//       where: {
+//         khoahoc: { idGiangVien: idGiangVien }
+//       }
+//     })
+
+//     res.json({
+//       overview: {
+//         totalClasses,
+//         totalStudents,
+//         totalLessons,
+//         totalQuizzes
+//       },
+//       recentClasses,
+//       topClasses: topClasses.map(c => ({
+//         idKhoaHoc: c.idKhoaHoc,
+//         tenKhoaHoc: c.tenKhoaHoc,
+//         totalStudents: c._count.dangky_khoahoc
+//       })),
+//       progressStats
+//     })
+
+//   } catch (error) {
+//     res.status(500).json({ error: error.message })
+//   }
+// })
 router.get('/dashboard', checkGiangVien, async (req, res) => {
   try {
-    const idGiangVien = req.user.idNguoiDung
-    const totalClasses = await prisma.khoahoc.count({
-      where: { idGiangVien: idGiangVien }
-    })
+    const idGiangVien = req.user.idNguoiDung;
+    const now = new Date();
+    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    const totalStudents = await prisma.dangky_khoahoc.count({
-      where: {
-        khoahoc: { idGiangVien: idGiangVien }
-      }
-    })
-
-    const totalLessons = await prisma.baihoc.count({
-      where: {
-        khoahoc: { idGiangVien: idGiangVien }
-      }
-    })
-
-    const totalQuizzes = await prisma.quizzes.count({
-      where: {
-        khoahoc: { idGiangVien: idGiangVien }
-      }
-    })
+    const [
+      totalClasses,
+      totalStudents,
+      totalLessons,
+      totalQuizzes,
+      totalAssignments,
+      pendingSubmissions,
+      gradedSubmissions
+    ] = await Promise.all([
+      prisma.khoahoc.count({ where: { idGiangVien } }),
+      prisma.dangky_khoahoc.count({
+        where: { khoahoc: { idGiangVien } }
+      }),
+      prisma.baihoc.count({
+        where: { khoahoc: { idGiangVien } }
+      }),
+      prisma.quizzes.count({
+        where: { khoahoc: { idGiangVien } }
+      }),
+      prisma.assignments.count({
+        where: { khoahoc: { idGiangVien } }
+      }),
+      prisma.submissions.count({
+        where: {
+          assignment: { khoahoc: { idGiangVien } },
+          grades: null
+        }
+      }),
+      prisma.submissions.count({
+        where: {
+          assignment: { khoahoc: { idGiangVien } },
+          grades: { isNot: null }
+        }
+      })
+    ]);
 
     const recentClasses = await prisma.khoahoc.findMany({
-      where: { idGiangVien: idGiangVien },
+      where: { idGiangVien },
       orderBy: { ngayTao: 'desc' },
       take: 5,
       select: {
         idKhoaHoc: true,
         tenKhoaHoc: true,
         code: true,
-        ngayTao: true
+        ngayTao: true,
+        _count: {
+          select: { dangky_khoahoc: true }
+        }
       }
-    })
+    });
 
     const topClasses = await prisma.khoahoc.findMany({
-      where: { idGiangVien: idGiangVien },
+      where: { idGiangVien },
       include: {
         _count: {
           select: { dangky_khoahoc: true }
@@ -108,36 +208,127 @@ router.get('/dashboard', checkGiangVien, async (req, res) => {
         }
       },
       take: 5
-    })
+    });
 
     const progressStats = await prisma.progress.groupBy({
       by: ['trangThai'],
       _count: true,
       where: {
-        khoahoc: { idGiangVien: idGiangVien }
+        khoahoc: { idGiangVien }
       }
-    })
+    });
+
+    const upcomingDeadlines = await prisma.assignments.findMany({
+      where: {
+        khoahoc: { idGiangVien },
+        hanNop: {
+          gte: now,
+          lte: sevenDaysLater
+        }
+      },
+      orderBy: { hanNop: 'asc' },
+      take: 5,
+      include: {
+        khoahoc: {
+          select: {
+            tenKhoaHoc: true
+          }
+        },
+        _count: {
+          select: { submissions: true }
+        }
+      }
+    });
+
+    const quizzesWithoutResults = await prisma.quizzes.findMany({
+      where: {
+        khoahoc: { idGiangVien },
+        results: {
+          none: {}
+        }
+      },
+      include: {
+        khoahoc: {
+          select: {
+            tenKhoaHoc: true
+          }
+        }
+      },
+      take: 5
+    });
+    const avgScores = await prisma.grades.aggregate({
+      where: {
+        submission: {
+          assignment: {
+            khoahoc: { idGiangVien }
+          }
+        }
+      },
+      _avg: {
+        diem: true
+      },
+      _max: {
+        diem: true
+      },
+      _min: {
+        diem: true
+      }
+    });
 
     res.json({
+      success: true,
       overview: {
         totalClasses,
         totalStudents,
         totalLessons,
-        totalQuizzes
+        totalQuizzes,
+        totalAssignments,
+        pendingSubmissions,
+        gradedSubmissions
       },
-      recentClasses,
+      recentClasses: recentClasses.map(c => ({
+        idKhoaHoc: c.idKhoaHoc,
+        tenKhoaHoc: c.tenKhoaHoc,
+        code: c.code,
+        ngayTao: c.ngayTao,
+        totalStudents: c._count.dangky_khoahoc
+      })),
       topClasses: topClasses.map(c => ({
         idKhoaHoc: c.idKhoaHoc,
         tenKhoaHoc: c.tenKhoaHoc,
         totalStudents: c._count.dangky_khoahoc
       })),
-      progressStats
-    })
+      progressStats: progressStats.map(p => ({
+        trangThai: p.trangThai,
+        count: p._count
+      })),
+      upcomingDeadlines: upcomingDeadlines.map(a => ({
+        idAssignment: a.idAssignment,
+        tieuDe: a.tieuDe,
+        hanNop: a.hanNop,
+        tenKhoaHoc: a.khoahoc.tenKhoaHoc,
+        totalSubmissions: a._count.submissions
+      })),
+      quizzesWithoutResults: quizzesWithoutResults.map(q => ({
+        idQuiz: q.idQuiz,
+        tenQuiz: q.tenQuiz,
+        tenKhoaHoc: q.khoahoc.tenKhoaHoc
+      })),
+      avgScores: {
+        avg: avgScores._avg.diem || 0,
+        max: avgScores._max.diem || 0,
+        min: avgScores._min.diem || 0
+      }
+    });
 
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    console.error("Lỗi Dashboard:", error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
-})
+});
 
 router.get('/:id', checkGiangVien, async (req, res) => {
     try{

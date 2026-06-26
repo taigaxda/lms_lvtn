@@ -21,6 +21,84 @@ router.get('/', checkAdmin, async (req, res) => {
     }
 })
 
+// router.get('/dashboard', checkAdmin, async (req, res) => {
+//   try {
+//     const [
+//       totalUsers,
+//       totalStudents,
+//       totalTeachers,
+//       totalClasses,
+//       totalEnrollments,
+//       totalLessons
+//     ] = await Promise.all([
+//       prisma.nguoidung.count(),
+//       prisma.nguoidung.count({ where: { vaiTro: 'hocvien' } }),
+//       prisma.nguoidung.count({ where: { vaiTro: 'giangvien' } }),
+//       prisma.khoahoc.count(),
+//       prisma.dangky_khoahoc.count(),
+//       prisma.baihoc.count()
+//     ]);
+
+//     const topClasses = await prisma.khoahoc.findMany({
+//       include: {
+//         _count: {
+//           select: { dangky_khoahoc: true }
+//         },
+//         nguoidung: {
+//           select: { hoTen: true }
+//         }
+//       },
+//       orderBy: {
+//         dangky_khoahoc: { _count: 'desc' }
+//       },
+//       take: 5
+//     });
+
+//     const recentUsers = await prisma.nguoidung.findMany({
+//       orderBy: { idNguoiDung: 'desc' }, 
+//       take: 5,
+//       select: {
+//         idNguoiDung: true,
+//         hoTen: true,
+//         email: true,
+//         vaiTro: true,
+//       }
+//     });
+//     const userRoleStats = await prisma.nguoidung.groupBy({
+//       by: ['vaiTro'],
+//       _count: true
+//     });
+
+//     const systemProgress = await prisma.progress.groupBy({
+//       by: ['trangThai'],
+//       _count: true
+//     });
+
+//     res.json({
+//       overview: {
+//         totalUsers,
+//         totalStudents,
+//         totalTeachers,
+//         totalClasses,
+//         totalEnrollments,
+//         totalLessons
+//       },
+//       topClasses: topClasses.map(c => ({
+//         idKhoaHoc: c.idKhoaHoc,
+//         tenKhoaHoc: c.tenKhoaHoc,
+//         giangVien: c.nguoidung?.hoTen || "Chưa phân công",
+//         totalStudents: c._count.dangky_khoahoc
+//       })),
+//       recentUsers,
+//       userRoleStats,
+//       systemProgress
+//     });
+
+//   } catch (error) {
+//     console.error("Lỗi Admin Dashboard:", error);
+//     res.status(500).json({ error: "Lỗi hệ thống khi lấy dữ liệu Dashboard Admin" });
+//   }
+// });
 router.get('/dashboard', checkAdmin, async (req, res) => {
   try {
     const [
@@ -29,14 +107,22 @@ router.get('/dashboard', checkAdmin, async (req, res) => {
       totalTeachers,
       totalClasses,
       totalEnrollments,
-      totalLessons
+      totalLessons,
+      totalAssignments,
+      totalQuizzes,
+      totalSubmissions,
+      totalGrades
     ] = await Promise.all([
       prisma.nguoidung.count(),
       prisma.nguoidung.count({ where: { vaiTro: 'hocvien' } }),
       prisma.nguoidung.count({ where: { vaiTro: 'giangvien' } }),
       prisma.khoahoc.count(),
       prisma.dangky_khoahoc.count(),
-      prisma.baihoc.count()
+      prisma.baihoc.count(),
+      prisma.assignments.count(),
+      prisma.quizzes.count(),
+      prisma.submissions.count(),
+      prisma.grades.count()
     ]);
 
     const topClasses = await prisma.khoahoc.findMany({
@@ -54,16 +140,50 @@ router.get('/dashboard', checkAdmin, async (req, res) => {
       take: 5
     });
 
+    const recentClasses = await prisma.khoahoc.findMany({
+      orderBy: { ngayTao: 'desc' },
+      take: 5,
+      include: {
+        nguoidung: {
+          select: { hoTen: true }
+        },
+        _count: {
+          select: { dangky_khoahoc: true }
+        }
+      }
+    });
     const recentUsers = await prisma.nguoidung.findMany({
-      orderBy: { idNguoiDung: 'desc' }, 
+      orderBy: { idNguoiDung: 'desc' },
       take: 5,
       select: {
         idNguoiDung: true,
         hoTen: true,
         email: true,
-        vaiTro: true,
+        vaiTro: true
       }
     });
+
+    const recentSubmissions = await prisma.submissions.findMany({
+      orderBy: { ngayNop: 'desc' },
+      take: 5,
+      include: {
+        nguoidung: {
+          select: { hoTen: true, email: true }
+        },
+        assignment: {
+          select: {
+            tieuDe: true,
+            khoahoc: {
+              select: { tenKhoaHoc: true }
+            }
+          }
+        },
+        grades: {
+          select: { diem: true }
+        }
+      }
+    });
+
     const userRoleStats = await prisma.nguoidung.groupBy({
       by: ['vaiTro'],
       _count: true
@@ -74,14 +194,38 @@ router.get('/dashboard', checkAdmin, async (req, res) => {
       _count: true
     });
 
+    const avgScores = await prisma.grades.aggregate({
+      _avg: { diem: true },
+      _max: { diem: true },
+      _min: { diem: true }
+    });
+
+    // Thống kê quiz
+    const quizStats = await prisma.quizzes.findMany({
+      include: {
+        _count: {
+          select: { results: true }
+        }
+      },
+      take: 5,
+      orderBy: {
+        results: { _count: 'desc' }
+      }
+    });
+
     res.json({
+      success: true,
       overview: {
         totalUsers,
         totalStudents,
         totalTeachers,
         totalClasses,
         totalEnrollments,
-        totalLessons
+        totalLessons,
+        totalAssignments,
+        totalQuizzes,
+        totalSubmissions,
+        totalGrades
       },
       topClasses: topClasses.map(c => ({
         idKhoaHoc: c.idKhoaHoc,
@@ -89,14 +233,43 @@ router.get('/dashboard', checkAdmin, async (req, res) => {
         giangVien: c.nguoidung?.hoTen || "Chưa phân công",
         totalStudents: c._count.dangky_khoahoc
       })),
+      recentClasses: recentClasses.map(c => ({
+        idKhoaHoc: c.idKhoaHoc,
+        tenKhoaHoc: c.tenKhoaHoc,
+        giangVien: c.nguoidung?.hoTen || "Chưa phân công",
+        totalStudents: c._count.dangky_khoahoc,
+        ngayTao: c.ngayTao
+      })),
       recentUsers,
+      recentSubmissions: recentSubmissions.map(s => ({
+        idSubmission: s.idSubmission,
+        hoTen: s.nguoidung.hoTen,
+        email: s.nguoidung.email,
+        tieuDe: s.assignment.tieuDe,
+        tenKhoaHoc: s.assignment.khoahoc.tenKhoaHoc,
+        diem: s.grades?.diem || null,
+        ngayNop: s.ngayNop
+      })),
       userRoleStats,
-      systemProgress
+      systemProgress,
+      avgScores: {
+        avg: avgScores._avg.diem || 0,
+        max: avgScores._max.diem || 0,
+        min: avgScores._min.diem || 0
+      },
+      quizStats: quizStats.map(q => ({
+        idQuiz: q.idQuiz,
+        tenQuiz: q.tenQuiz,
+        daLam: q._count.results
+      }))
     });
 
   } catch (error) {
     console.error("Lỗi Admin Dashboard:", error);
-    res.status(500).json({ error: "Lỗi hệ thống khi lấy dữ liệu Dashboard Admin" });
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 });
 
