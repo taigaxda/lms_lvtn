@@ -92,12 +92,12 @@ router.get('/chitiet/:idGroup', checkGroupPermission, async (req, res) => {
     try {
         const idGroup = parseInt(req.params.idGroup);
         const idNguoiDung = req.user.idNguoiDung;
-        const group = prisma.groups.findUnique({
+        const group = await prisma.groups.findUnique({
             where: {
                 idGroup: idGroup
             },
             include: {
-                khoaHoc: {
+                khoahoc: {
                     select: {
                         idKhoaHoc: true,
                         tenKhoaHoc: true,
@@ -506,6 +506,7 @@ router.post('/join/:idGroup', checkGroupPermission, async (req, res) => {
 router.post('/leave/:idGroup', checkGroupPermission, async (req, res) => {
     try {
         const idGroup = parseInt(req.params.idGroup);
+        const idNguoiDung = req.user.idNguoiDung;
         const vaiTro = req.user.vaiTro;
         if (isNaN(idGroup)) {
             return res.status(400).json({

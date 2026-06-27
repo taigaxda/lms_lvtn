@@ -9,6 +9,7 @@ import 'package:frontend/hocvien/lophoc/danhSachBaiKTScreen.dart';
 import 'baitap/dsBaiTapHVScreen.dart';
 import '../thongbao/thongBaoHVScreen.dart';
 import 'package:frontend/comments/commentsScreen.dart';
+import 'package:frontend/groupchat/danhSachGroupScreen.dart';
 
 class ChiTietLopHocHVScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -132,6 +133,16 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
     );
   }
 
+  Future<void> openGroupScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            Danhsachgroupscreen(idKhoaHoc: widget.idKhoaHoc, vaiTro: vaiTro),
+      ),
+    );
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -148,6 +159,9 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
         break;
       case 3:
         openThongBaoScreen();
+        break;
+      case 4:
+        openGroupScreen();
         break;
     }
   }
@@ -186,6 +200,10 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),
             label: 'Thông báo',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group),
+            label: 'Nhóm chat',
           ),
         ],
       ),
@@ -342,8 +360,11 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
                         icon: const Icon(Icons.comment, color: Colors.blue),
                         onPressed: () {
                           Navigator.push(
-                            context, 
-                            MaterialPageRoute(builder: (_)=>Commentsscreen(idBaiHoc: b['idBaiHoc']))
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  Commentsscreen(idBaiHoc: b['idBaiHoc']),
+                            ),
                           );
                         },
                         tooltip: 'Bình luận',

@@ -10,6 +10,7 @@ import 'package:frontend/giangvien/quanlyhocvien/qlhvGVScreen.dart';
 import 'package:frontend/giangvien/baitap/baiTapGVScreen.dart';
 import 'package:frontend/giangvien/thongbao/thongBaoGVScreen.dart';
 import 'package:frontend/comments/commentsScreen.dart';
+import 'package:frontend/groupchat/danhSachGroupScreen.dart';
 
 class ChiTietLopHocScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -120,11 +121,15 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     }
   }
 
-  Future<void> openEditBaiHoc(Map<String, dynamic>baiHoc) async {
-    final result = await Navigator.push(context, 
-    MaterialPageRoute(builder: (_)=>Addbaihocscreen(idKhoaHoc: widget.idKhoaHoc, baiHoc: baiHoc,)));
-    if(result == true) 
-      loadAllData();
+  Future<void> openEditBaiHoc(Map<String, dynamic> baiHoc) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            Addbaihocscreen(idKhoaHoc: widget.idKhoaHoc, baiHoc: baiHoc),
+      ),
+    );
+    if (result == true) loadAllData();
   }
 
   void confirmDelete(int idBaiHoc) {
@@ -150,39 +155,65 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     );
   }
 
+  void openGroupScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Danhsachgroupscreen(
+          idKhoaHoc: widget.idKhoaHoc,
+          vaiTro: 'giangvien',
+        ),
+      ),
+    );
+  }
+
   void _onItemTapped(int index) {
-    if (index == 1) {
-      openAddBaiHoc(widget.idKhoaHoc);
-    } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => Baikiemtragvscreen(idKhoaHoc: widget.idKhoaHoc),
-        ),
-      );
-    } else if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => QlhvGVScreen(idKhoaHoc: widget.idKhoaHoc),
-        ),
-      );
-    }
-    else if (index == 4) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => Thongbaogvscreen(idKhoaHoc: widget.idKhoaHoc),
-        ),
-      );
-    } 
-    else {
-       Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => Baitapgvscreen(idKhoaHoc: widget.idKhoaHoc),
-        ),
-      );
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        // Bài học (ở lại trang hiện tại)
+        break;
+      case 1:
+        openAddBaiHoc(widget.idKhoaHoc);
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => Baikiemtragvscreen(idKhoaHoc: widget.idKhoaHoc),
+          ),
+        );
+        break;
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QlhvGVScreen(idKhoaHoc: widget.idKhoaHoc),
+          ),
+        );
+        break;
+      case 4:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => Thongbaogvscreen(idKhoaHoc: widget.idKhoaHoc),
+          ),
+        );
+        break;
+      case 5:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => Baitapgvscreen(idKhoaHoc: widget.idKhoaHoc),
+          ),
+        );
+        break;
+      case 6:
+        openGroupScreen();
+        break;
     }
   }
 
@@ -231,10 +262,8 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
             icon: Icon(Icons.notifications),
             label: "Thông báo",
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: "Bài tập",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: "Bài tập"),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: "Nhóm chat"),
         ],
       ),
     );
@@ -345,8 +374,8 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue,),
-                        onPressed: (){
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () {
                           openEditBaiHoc(b);
                         },
                       ),
@@ -354,8 +383,11 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                         icon: const Icon(Icons.comment, color: Colors.blue),
                         onPressed: () {
                           Navigator.push(
-                            context, 
-                            MaterialPageRoute(builder: (_)=>Commentsscreen(idBaiHoc: b['idBaiHoc']))
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  Commentsscreen(idBaiHoc: b['idBaiHoc']),
+                            ),
                           );
                         },
                         tooltip: 'Bình luận',
@@ -366,7 +398,7 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                           final id = b['idBaiHoc'];
                           confirmDelete(id);
                         },
-                      )
+                      ),
                     ],
                   ),
                 ),
