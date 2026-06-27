@@ -25,6 +25,7 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
 
   Timer? timer;
   int remainingTime = 0;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -39,31 +40,52 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
   }
 
   Future<void> loadQuiz() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("token");
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
 
-    final res = await http.get(
-      Uri.parse('$apiUrl/quiz/baikiemtra/${widget.idQuiz}'),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
+      final res = await http.get(
+        Uri.parse('$apiUrl/quiz/baikiemtra/${widget.idQuiz}'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body)['data'];
+        if (data['questions'] == null || data['questions'].isEmpty) {
+          setState(() {
+            errorMessage =
+                "Bài kiểm tra chưa có câu hỏi. Vui lòng quay lại sau.";
+            isLoading = false;
+          });
+          return;
+        }
+        setState(() {
+          quiz = data;
+          questions = data['questions'];
+          isLoading = false;
+          errorMessage = null;
+        });
 
-    if (res.statusCode == 200) {
-      final data = jsonDecode(res.body)['data'];
-
+        if (data['thoiGianLamBai'] != null) {
+          remainingTime = data['thoiGianLamBai'] * 60;
+          startTimer();
+        } else {
+          remainingTime = -1;
+        }
+      } else {
+        final data = jsonDecode(res.body);
+        setState(() {
+          errorMessage = data['message'] ?? 'Không thể tải bài kiểm tra';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
       setState(() {
-        quiz = data;
-        questions = data['questions'];
+        errorMessage = 'Lỗi kết nối server. Vui lòng thử lại.';
         isLoading = false;
       });
-      if (data['thoiGianLamBai'] != null) {
-        remainingTime = data['thoiGianLamBai'] * 60;
-        startTimer();
-      } else {
-        remainingTime = -1;
-      }
     }
   }
 
@@ -175,7 +197,16 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
           Padding(
             padding: const EdgeInsets.all(12),
             child: Center(
-              child: remainingTime == -1
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : remainingTime == -1
                   ? const Text("Không giới hạn")
                   : Text(formatTime(remainingTime)),
             ),
@@ -184,23 +215,92 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
+          : errorMessage !=
+                null // ✅ Kiểm tra errorMessage
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red.shade300,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      errorMessage!,
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text("Quay lại"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : questions.isEmpty
+          ? const Center(
+              child: Text(
+                "Bài kiểm tra không có câu hỏi",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            )
           : Column(
               children: [
                 Expanded(
                   child: ListView(
+                    padding: const EdgeInsets.only(bottom: 80),
                     children: questions.map((q) => buildQuestion(q)).toList(),
                   ),
                 ),
-                Padding(
+                Container(
                   padding: const EdgeInsets.all(12),
-                  child: ElevatedButton(
-                    onPressed: submitQuiz,
-                    child: const Text("Nộp bài"),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Đã trả lời: ${answers.length}/${questions.length}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: submitQuiz,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(120, 45),
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text("Nộp bài"),
+                      ),
+                    ],
                   ),
                 ),
               ],

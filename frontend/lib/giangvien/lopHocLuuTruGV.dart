@@ -17,7 +17,7 @@ class _LopHocLuuTruGVScreenState extends State<LopHocLuuTruGVScreen> {
   List classes = [];
   bool isLoading = true;
 
-  final String apiUrl = '${ApiConfig.baseUrl}/giangvien/lophoc/luutru';
+  final String apiUrl = '${ApiConfig.baseUrl}/giangvien/lophoc';
   String hoTen = "";
   String vaiTro = "";
 
@@ -41,7 +41,7 @@ class _LopHocLuuTruGVScreenState extends State<LopHocLuuTruGVScreen> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
       final response = await http.get(
-        Uri.parse(apiUrl),
+        Uri.parse('$apiUrl/luutru'),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",
@@ -69,7 +69,7 @@ class _LopHocLuuTruGVScreenState extends State<LopHocLuuTruGVScreen> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
       final response = await http.delete(
-        Uri.parse('$apiUrl/$idKhoaHoc'),
+        Uri.parse('$apiUrl/$idKhoaHoc?confirm=true'),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",

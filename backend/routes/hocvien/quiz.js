@@ -85,6 +85,20 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
                 message: "Bài kiểm tra không tồn tại"
             });
         }
+        if (!quiz.questions || quiz.questions.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Bài kiểm tra chưa có câu hỏi. Vui lòng quay lại sau."
+            });
+        }
+        for (const question of quiz.questions) {
+            if (!question.answers || question.answers.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Câu hỏi "${question.cauHoi}" chưa có đáp án. Vui lòng quay lại sau.`
+                });
+            }
+        }
         const dangKy = await prisma.dangky_khoahoc.findFirst({
             where: {
                 idNguoiDung,

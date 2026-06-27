@@ -26,12 +26,12 @@ class _AddClassGVScreenState extends State<AddClassGVScreen> {
   final String apiUrl = "${ApiConfig.baseUrl}/giangvien/lophoc";
   Future<void> addClass() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
     final response = await http.post(
       Uri.parse(apiUrl),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId != null ? userId.toString() : ""
+        "Authorization": "Bearer $token",
       },
       body: json.encode({
         'tenKhoaHoc': tenController.text,
@@ -50,14 +50,15 @@ class _AddClassGVScreenState extends State<AddClassGVScreen> {
       );
     }
   }
+
   Future<void> updateClass() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt("userId");
+    final token = prefs.getString("token");
     final response = await http.put(
       Uri.parse('$apiUrl/${widget.khoahoc!['idKhoaHoc']}'),
       headers: {
         "Content-Type": "application/json",
-        "x-user-id": userId != null ? userId.toString() : ""
+        "Authorization": "Bearer $token",
       },
       body: json.encode({
         'tenKhoaHoc': tenController.text,
@@ -76,6 +77,7 @@ class _AddClassGVScreenState extends State<AddClassGVScreen> {
       );
     }
   }
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +88,7 @@ class _AddClassGVScreenState extends State<AddClassGVScreen> {
       trangThai = widget.khoahoc!['trangThai'] ?? true;
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

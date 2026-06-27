@@ -82,7 +82,7 @@ class _LopHocGVScreenState extends State<LopHocGVScreen> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
       final response = await http.delete(
-        Uri.parse('$apiUrl/$idKhoaHoc'),
+        Uri.parse('$apiUrl/$idKhoaHoc?confirm=true'),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",

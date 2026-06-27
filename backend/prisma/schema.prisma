@@ -247,12 +247,17 @@ model group_members {
   id           Int @id @default(autoincrement())
   idGroup      Int
   idNguoiDung  Int
-  vaiTroNhom   String?
+  vaiTroNhom   vaiTroNhom?
 
   group groups @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
 
   @@unique([idGroup, idNguoiDung])
+}
+
+enum vaiTroNhom {
+  truong_nhom
+  thanh_vien
 }
 
 model messages {
