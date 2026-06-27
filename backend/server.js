@@ -1,4 +1,6 @@
 import express from 'express'
+import http from 'http'
+import { Server } from 'socket.io'
 import test from './test.js'
 import nguoiDungRoutes from './routes/admin/nguoidung.js'
 import authRoutes from './routes/auth.js'
@@ -21,6 +23,15 @@ import cors from 'cors'
 
 const app = express()
 const PORT = process.env.PORT || 5000;
+
+//socket
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(cors())
 
@@ -45,6 +56,14 @@ app.use('/admin/thongbao',thongBaoAdminRoutes)
 app.use('/comments',commentsRoutes)
 app.use('/groups',groupRoutes)
 app.use('/', test)
+
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
 
 app.listen(PORT, () => {
   console.log('Server chạy ở' + PORT)
