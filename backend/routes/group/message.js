@@ -77,7 +77,7 @@ router.get('/messgr/:idGroup', checkGroupPermission, async (req, res) => {
             }
         })
     }
-    catch (e) {
+    catch (err) {
         res.status(500).json({
             success: false,
             message: err.message
@@ -246,8 +246,8 @@ router.delete('/:idMessage', checkGroupPermission, async (req, res) => {
             })
         }
         const laNguoiGui = message.idNguoiDung === idNguoiDung
-        const laTruongNhom = message.group.members.some(m=>m.idNguoiDung === idNguoiDung && m.vaiTroNhom === 'truong_nhom')
-        if(!laNguoiGui && !laTruongNhom){
+        const laTruongNhom = message.group.members.some(m => m.idNguoiDung === idNguoiDung && m.vaiTroNhom === 'truong_nhom')
+        if (!laNguoiGui && !laTruongNhom) {
             return res.status(403).json({
                 success: false,
                 message: "Bạn không có quyền xóa tin nhắn này"
@@ -258,8 +258,8 @@ router.delete('/:idMessage', checkGroupPermission, async (req, res) => {
         })
         const io = req.app.get('io');
         if (io) {
-            io.to(`group_${message.idGroup}`).emit('message-deleted', { 
-                idMessage: idMessage 
+            io.to(`group_${message.idGroup}`).emit('message-deleted', {
+                idMessage: idMessage
             })
         }
         res.status(200).json({
@@ -275,11 +275,11 @@ router.delete('/:idMessage', checkGroupPermission, async (req, res) => {
     }
 })
 router.put('/:idMessage', checkGroupPermission, async (req, res) => {
-    try{
+    try {
         const idMessage = parseInt(req.params.idMessage)
         const idNguoiDung = req.user.idNguoiDung
         const { noiDung } = req.body
-         if (isNaN(idMessage)) {
+        if (isNaN(idMessage)) {
             return res.status(400).json({
                 success: false,
                 message: "ID tin nhắn không hợp lệ"
@@ -294,7 +294,7 @@ router.put('/:idMessage', checkGroupPermission, async (req, res) => {
         }
 
         const message = await prisma.messages.findUnique({
-            where: { 
+            where: {
                 idMessage: idMessage
             }
         })
@@ -314,7 +314,7 @@ router.put('/:idMessage', checkGroupPermission, async (req, res) => {
         }
 
         const updatedMessage = await prisma.messages.update({
-            where: { 
+            where: {
                 idMessage: idMessage
             },
             data: {
@@ -341,7 +341,7 @@ router.put('/:idMessage', checkGroupPermission, async (req, res) => {
             data: updatedMessage
         })
     }
-     catch (err) {
+    catch (err) {
         res.status(500).json({
             success: false,
             message: err.message
