@@ -264,7 +264,8 @@ model messages {
   idMessage   Int      @id @default(autoincrement())
   idGroup     Int
   idNguoiDung Int
-  noiDung     String
+  noiDung     String?
+  fileUrl     String?
   thoiGian    DateTime @default(now())
 
   group groups @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)

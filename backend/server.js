@@ -19,6 +19,7 @@ import thongBaoHocVienRoutes from './routes/hocvien/thongbao.js'
 import thongBaoAdminRoutes from './routes/admin/thongbao.js'
 import commentsRoutes from './routes/comments.js'
 import groupRoutes from './routes/group/group.js'
+import messageRoutes from './routes/group/message.js'
 import cors from 'cors'
 
 const app = express()
@@ -55,6 +56,7 @@ app.use('/hocvien/thongbao',thongBaoHocVienRoutes)
 app.use('/admin/thongbao',thongBaoAdminRoutes)
 app.use('/comments',commentsRoutes)
 app.use('/groups',groupRoutes)
+app.use('/messages',messageRoutes)
 app.use('/', test)
 
 io.on('connection', (socket) => {
