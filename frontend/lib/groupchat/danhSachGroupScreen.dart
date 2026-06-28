@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/api.dart';
 import 'themSuaGroupScreen.dart';
+import 'messsage/chiTietGroupScreen.dart';
 
 class Danhsachgroupscreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -189,6 +190,17 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
       ),
     );
   }
+  void _navigateToChat(Map group) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Chitietgroupscreen(
+          groupId: group['idGroup'],
+          tenNhom: group['tenNhom'] ?? 'Nhóm chat',
+        ),
+      ),
+    );
+  }
 
   Widget _buildGroupItem(Map group) {
     final isMember = group['isMember'] ?? false;
@@ -237,20 +249,6 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // if (canEdit)
-            //   IconButton(
-            //     icon: const Icon(Icons.edit, color: Colors.orange),
-            //     onPressed: () => _navigateToEditGroup(group),
-            //     tooltip: "Sửa nhóm",
-            //   ),
-            // if (canDelete)
-            //   IconButton(
-            //     icon: const Icon(Icons.delete, color: Colors.red),
-            //     onPressed: () => _confirmDeleteGroup(
-            //       group['idGroup'],
-            //       group['tenNhom'] ?? '',
-            //     ),
-            //   ),
             if (!isMember)
               ElevatedButton(
                 onPressed: () => joinGroup(group['idGroup']),
@@ -317,7 +315,9 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
               ),
           ],
         ),
-        onTap: () {},
+        onTap: () {
+          _navigateToChat(group);
+        },
       ),
     );
   }

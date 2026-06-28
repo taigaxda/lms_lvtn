@@ -195,7 +195,7 @@ router.post('/tinnhan/:idGroup', checkGroupPermission, upload.single('file'), as
                 idNguoiDung,
                 noiDung: coNoiDung ? noiDung.trim() : null,
                 fileUrl: fileUrl,
-                thoiGian: new Date()
+                thoiGian: new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
             },
             include: {
                 nguoidung: {
@@ -229,12 +229,26 @@ router.delete('/:idMessage', checkGroupPermission, async (req, res) => {
     try {
         const idMessage = parseInt(req.params.idMessage)
         const idNguoiDung = req.user.idNguoiDung
+        const vaiTro = req.user.vaiTro
         const message = await prisma.messages.findUnique({
-            where: { idMessage },
+            where: { 
+                idMessage 
+            },
             include: {
+                nguoidung: {
+                    select: {
+                        vaiTro: true,
+                        hoTen: true
+                    }
+                },
                 group: {
                     include: {
-                        members: true
+                        members: true,
+                        khoahoc: {
+                            select: {
+                                idGiangVien: true
+                            }
+                        }
                     }
                 }
             }
@@ -243,6 +257,14 @@ router.delete('/:idMessage', checkGroupPermission, async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: "Không tìm thấy tin nhắn"
+            })
+        }
+        const isGiangVienMessage = message.nguoidung.vaiTro === 'giangvien'
+        const isGiangVien = vaiTro === 'giangvien'
+        if (isGiangVienMessage && !isGiangVien) {
+            return res.status(403).json({
+                success: false,
+                message: "Chỉ giảng viên mới có quyền xóa tin nhắn của giảng viên"
             })
         }
         const laNguoiGui = message.idNguoiDung === idNguoiDung
