@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/hocvien/menuUI/hocVienMenuBar.dart';
 import 'package:frontend/api.dart';
 import 'package:frontend/hocvien/lophoc/chiTietLopHocHV.dart';
+import 'package:frontend/profileScreen.dart';
 
 class HocVienScreen extends StatefulWidget {
   const HocVienScreen({super.key});
@@ -176,6 +177,17 @@ class _HocVienScreenState extends State<HocVienScreen> {
     }
   }
 
+  void navigateToProfile(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+    );
+    if (result == true) {
+      await loadUserInfo();
+      await fetchDSLopHoc();
+    }
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -234,10 +246,18 @@ class _HocVienScreenState extends State<HocVienScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Học Viên"),
-      backgroundColor: Colors.blue,
+      appBar: AppBar(
+        title: const Text("Học Viên"),
+        backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () => navigateToProfile(context),
+            tooltip: 'Thông tin cá nhân',
+          ),
+        ],
       ),
       drawer: Hocvienmenubar(hoTen: hoTen, vaiTro: vaiTro),
       body: isLoading
@@ -331,7 +351,7 @@ class _HocVienScreenState extends State<HocVienScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showJoinDialog,
-        child: const Icon(Icons.add,color: Colors.white,),
+        child: const Icon(Icons.add, color: Colors.white),
         backgroundColor: Colors.blue,
       ),
     );

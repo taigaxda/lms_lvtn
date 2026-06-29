@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import { generateOTP, saveOTP, verifyOTP } from './otp.js';
 import { sendOTPEmail, sendPasswordChangedEmail } from './email.js';
-
+import { checkAuth } from './middleware.js';
 if (!process.env.JWT_SECRET) {
     throw new Error("Thiếu JWT_SECRET trong .env")
 }
@@ -411,5 +411,183 @@ router.post('/reset-password', async (req, res) => {
         });
     }
 });
+
+router.get('/profile', checkAuth, async (req, res) => {
+    try {
+        const user = await prisma.nguoidung.findUnique({
+            where: { idNguoiDung: req.user.idNguoiDung },
+            select: {
+                idNguoiDung: true,
+                hoTen: true,
+                taiKhoan: true,
+                email: true,
+                vaiTro: true,
+                trangThai: true
+            }
+        })
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy người dùng"
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        })
+    } catch (error) {
+        console.error('Lỗi lấy profile:', error)
+        res.status(500).json({
+            success: false,
+            message: "Không thể lấy thông tin người dùng"
+        })
+    }
+})
+
+router.put('/profile', checkAuth, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung
+        let { hoTen, email } = req.body
+
+        hoTen = hoTen ? hoTen.trim().replace(/\s+/g, ' ') : undefined
+        email = email ? email.trim() : undefined
+
+        if (!hoTen && !email) {
+            return res.status(400).json({
+                success: false,
+                message: "Vui lòng cập nhật ít nhất một trường"
+            })
+        }
+
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email không hợp lệ"
+                })
+            }
+
+            const existingEmail = await prisma.nguoidung.findFirst({
+                where: {
+                    email: email,
+                    idNguoiDung: { not: idNguoiDung }
+                }
+            })
+
+            if (existingEmail) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Email đã được sử dụng bởi tài khoản khác"
+                })
+            }
+        }
+
+        if (hoTen) {
+            const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/
+            if (!nameRegex.test(hoTen)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Họ tên chỉ được chứa chữ cái và khoảng trắng"
+                })
+            }
+        }
+
+        const updatedUser = await prisma.nguoidung.update({
+            where: { idNguoiDung: idNguoiDung },
+            data: {
+                ...(hoTen && { hoTen }),
+                ...(email && { email })
+            },
+            select: {
+                idNguoiDung: true,
+                hoTen: true,
+                taiKhoan: true,
+                email: true,
+                vaiTro: true,
+                trangThai: true
+            }
+        })
+
+        res.status(200).json({
+            success: true,
+            message: "Cập nhật thông tin thành công",
+            data: updatedUser
+        })
+    } catch (error) {
+        console.error('Lỗi cập nhật profile:', error)
+        res.status(500).json({
+            success: false,
+            message: "Không thể cập nhật thông tin"
+        })
+    }
+})
+
+router.put('/change-password', checkAuth, async (req, res) => {
+    try {
+        const idNguoiDung = req.user.idNguoiDung
+        const { oldPassword, newPassword, confirmPassword } = req.body
+
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Vui lòng điền đầy đủ thông tin"
+            })
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: "Mật khẩu mới phải có ít nhất 6 ký tự"
+            })
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Mật khẩu xác nhận không khớp"
+            })
+        }
+
+        const user = await prisma.nguoidung.findUnique({
+            where: { idNguoiDung: idNguoiDung }
+        })
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy người dùng"
+            })
+        }
+
+        const isPasswordValid = await bcrypt.compare(oldPassword, user.matKhau)
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: "Mật khẩu cũ không chính xác"
+            })
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+        await prisma.nguoidung.update({
+            where: { idNguoiDung: idNguoiDung },
+            data: { matKhau: hashedPassword }
+        })
+
+        res.status(200).json({
+            success: true,
+            message: "Đổi mật khẩu thành công"
+        })
+    } catch (error) {
+        console.error('Lỗi đổi mật khẩu:', error)
+        res.status(500).json({
+            success: false,
+            message: "Không thể đổi mật khẩu"
+        })
+    }
+})
 
 export default router

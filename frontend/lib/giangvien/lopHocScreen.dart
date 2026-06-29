@@ -6,6 +6,7 @@ import 'package:frontend/api.dart';
 import 'package:frontend/giangvien/menuUI/giangVienMenuBar.dart';
 import 'lophoc/addClassGVScreen.dart';
 import 'package:frontend/giangvien/lophoc/chiTietLopHoc.dart';
+import 'package:frontend/profileScreen.dart';
 
 class LopHocGVScreen extends StatefulWidget {
   const LopHocGVScreen({super.key});
@@ -104,6 +105,17 @@ class _LopHocGVScreenState extends State<LopHocGVScreen> {
     }
   }
 
+  void navigateToProfile(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+    );
+    if (result == true) {
+      await loadUserInfo();
+      await fetchClasses();
+    }
+  }
+
   void confirmXoaLop(int idKhoaHoc) {
     showDialog(
       context: context,
@@ -160,6 +172,13 @@ class _LopHocGVScreenState extends State<LopHocGVScreen> {
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () => navigateToProfile(context),
+            tooltip: 'Thông tin cá nhân',
+          ),
+        ],
         leading: Builder(
           builder: (context) {
             return IconButton(
@@ -287,7 +306,7 @@ class _LopHocGVScreenState extends State<LopHocGVScreen> {
         onPressed: () {
           goToAddClass();
         },
-        child: const Icon(Icons.add, color: Colors.white,),
+        child: const Icon(Icons.add, color: Colors.white),
         backgroundColor: Colors.blue,
       ),
     );
