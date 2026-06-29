@@ -68,27 +68,121 @@ app.use('/messages',messageRoutes)
 app.use('/', test)
 
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  
-  // Join group
-  socket.on('join-group', (groupId) => {
-    socket.join(`group_${groupId}`);
-    console.log(`User joined group: ${groupId}`);
+  console.log('🟢 Client connected:', socket.id);
+  socket.onAny((event, ...args) => {
+    console.log(`📡 [${event}]`, JSON.stringify(args));
   });
-  
+  // ✅ Join group - Hỗ trợ cả object và number
+  socket.on('join-group', (data) => {
+    let groupId;
+    
+    // Kiểm tra nếu data là object (từ Flutter gửi {groupId: 1})
+    if (typeof data === 'object' && data !== null) {
+      groupId = data.groupId || data.id || data.group;
+    } else {
+      // Nếu data là number trực tiếp
+      groupId = data;
+    }
+    
+    if (groupId) {
+      socket.join(`group_${groupId}`);
+      console.log(`📢 User joined group: ${groupId}`);
+      
+      // ✅ Gửi xác nhận đã join group
+      socket.emit('joined-group', { 
+        groupId: groupId, 
+        success: true 
+      });
+    } else {
+      console.log('❌ Invalid groupId:', data);
+      socket.emit('join-error', { 
+        message: 'Invalid groupId', 
+        data: data 
+      });
+    }
+  });
+
   // Leave group
-  socket.on('leave-group', (groupId) => {
-    socket.leave(`group_${groupId}`);
-    console.log(`User left group: ${groupId}`);
+  socket.on('leave-group', (data) => {
+    let groupId;
+    
+    if (typeof data === 'object' && data !== null) {
+      groupId = data.groupId || data.id || data.group;
+    } else {
+      groupId = data;
+    }
+    
+    if (groupId) {
+      socket.leave(`group_${groupId}`);
+      console.log(`🚪 User left group: ${groupId}`);
+    }
   });
-  
-  // Gửi tin nhắn
-  socket.on('send-message', async (data) => {
-    console.log(`Message from ${data.userName} to group ${data.groupId}: ${data.message}`);
+
+  // ✅ Gửi tin nhắn - Broadcast đến tất cả trong group
+  socket.on('send-message', (data) => {
+    console.log(`📤 Message from ${data.userName || 'Unknown'} to group ${data.groupId}: ${data.content || data.message}`);
+    
+    const groupId = data.groupId;
+    if (!groupId) {
+      console.log('❌ Missing groupId in send-message');
+      return;
+    }
+    
+    // ✅ Broadcast tin nhắn đến tất cả trong group
+    io.to(`group_${groupId}`).emit('receive-message', {
+      idMessage: data.idMessage || Date.now(),
+      content: data.content || data.message || '',
+      fileUrl: data.fileUrl || null,
+      userId: data.userId,
+      userName: data.userName || 'Unknown',
+      vaiTro: data.vaiTro || 'hocvien',
+      thoiGian: data.thoiGian || new Date().toISOString(),
+    });
   });
-  
+
+  // ✅ Edit message
+  socket.on('edit-message', (data) => {
+    const groupId = data.groupId;
+    if (!groupId) return;
+    
+    io.to(`group_${groupId}`).emit('message-edited', {
+      idMessage: data.idMessage,
+      noiDung: data.newContent || data.content,
+      edited: true,
+    });
+  });
+
+  // ✅ Delete message
+  socket.on('delete-message', (data) => {
+    const groupId = data.groupId;
+    if (!groupId) return;
+    
+    io.to(`group_${groupId}`).emit('message-deleted', {
+      idMessage: data.idMessage,
+      deleted: true,
+    });
+  });
+
+  // ✅ Typing
+  socket.on('typing', (data) => {
+    const groupId = data.groupId;
+    if (!groupId) return;
+    
+    socket.to(`group_${groupId}`).emit('user-typing', {
+      userId: data.userId,
+      userName: data.userName,
+      isTyping: data.isTyping,
+    });
+  });
+
+  // Disconnect
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    console.log('🔴 Client disconnected:', socket.id);
+  });
+
+  // Error handling
+  socket.on('error', (error) => {
+    console.error('❌ Socket error:', error);
   });
 });
 

@@ -1180,11 +1180,17 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   Future<void> _connectSocket() async {
     if (userId == 0) return;
 
-    if (!SocketService.isConnected()) {
-      SocketService.connect();
-    }
+  print('🔍 [UI] Connecting socket...');
+  
+  if (!SocketService.isConnected()) {
+    print('🔍 [UI] Socket not connected, calling connect()...');
+    SocketService.connect();
+  }
 
-    await _waitForSocketConnection();
+  // ✅ Thêm log all events
+  SocketService.logAllEvents();
+  
+  _waitForSocketConnection();
   }
 
   Future<void> _waitForSocketConnection() async {
