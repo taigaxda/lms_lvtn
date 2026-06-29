@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:frontend/giangvien/baitap/chamDiemBaiNopGV.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
@@ -26,8 +25,7 @@ class Chitietgroupscreen extends StatefulWidget {
   State<Chitietgroupscreen> createState() => _ChitietgroupscreenState();
 }
 
-class _ChitietgroupscreenState extends State<Chitietgroupscreen>
-    with AutomaticKeepAliveClientMixin {
+class _ChitietgroupscreenState extends State<Chitietgroupscreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String apiUrl = '${ApiConfig.baseUrl}/messages';
@@ -44,7 +42,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   File? _selectedFile;
   PlatformFile? _pickedFile;
   bool _isSocketConnected = false;
-  bool _isTruongNhom = false; // ✅ Thêm biến kiểm tra trưởng nhóm
+  bool _isTruongNhom = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -72,7 +70,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
       final id = prefs.getInt('userId') ?? 0;
       final name = prefs.getString('hoTen') ?? '';
 
-      print('👤 User loaded - ID: $id, Name: $name');
+      print('User loaded - ID: $id, Name: $name');
 
       setState(() {
         userId = id;
@@ -81,15 +79,15 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
 
       if (userId != 0) {
         _connectSocket();
-        await _checkTruongNhom(); // ✅ Kiểm tra trưởng nhóm
+        await _checkTruongNhom();
         await _loadMessages();
       }
     } catch (e) {
-      print('❌ Lỗi load user info: $e');
+      print('Lỗi load user info: $e');
     }
   }
 
-  // ✅ Hàm kiểm tra trưởng nhóm
+  //Hàm kiểm tra trưởng nhóm
   Future<void> _checkTruongNhom() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -109,10 +107,10 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         setState(() {
           _isTruongNhom = group['isTruongNhom'] ?? false;
         });
-        print('✅ Trưởng nhóm: $_isTruongNhom');
+        print('Trưởng nhóm: $_isTruongNhom');
       }
     } catch (e) {
-      print('❌ Lỗi kiểm tra trưởng nhóm: $e');
+      print('Lỗi kiểm tra trưởng nhóm: $e');
     }
   }
 
@@ -140,7 +138,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     if (mounted) {
       if (SocketService.isConnected()) {
         _isSocketConnected = true;
-        print('✅ Socket đã kết nối, join group...');
+        print('Socket đã kết nối, join group...');
         SocketService.joinGroup(widget.groupId);
 
         SocketService.onReceiveMessage((data) {
@@ -159,7 +157,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
           }
         });
       } else {
-        print('⚠️ Không thể kết nối Socket sau $maxAttempts lần thử');
+        print('Không thể kết nối Socket sau $maxAttempts lần thử');
       }
     }
   }
@@ -200,7 +198,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     if (loadMore && !hasMore) return;
 
     final startTime = DateTime.now();
-    print('⏱️ === BẮT ĐẦU LOAD ===');
+    print('=== BẮT ĐẦU LOAD ===');
 
     setState(() {
       if (loadMore) {
@@ -218,9 +216,8 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         throw Exception('Chưa đăng nhập');
       }
 
-      final url =
-          '$apiUrl/messgr/${widget.groupId}?page=$currentPage&limit=$limit';
-      print('🔗 URL: $url');
+      final url ='$apiUrl/messgr/${widget.groupId}?page=$currentPage&limit=$limit';
+      print('URL: $url');
 
       final response = await http.get(
         Uri.parse(url),
@@ -232,18 +229,16 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
 
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime);
-      print('⏱️ API response trong ${duration.inMilliseconds}ms');
-      print('📊 Status Code: ${response.statusCode}');
-      print('📊 Response Body: ${response.body}');
+      print('API response trong ${duration.inMilliseconds}ms');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final newMessages = List<Map<String, dynamic>>.from(data['data'] ?? []);
         final pagination = data['pagination'];
 
-        print(
-          '📊 Load ${newMessages.length} tin nhắn, có ${pagination['total']} tổng cộng',
-        );
+        print('Load ${newMessages.length} tin nhắn, có ${pagination['total']} tổng cộng',);
 
         setState(() {
           if (loadMore) {
@@ -266,7 +261,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         throw Exception('Lỗi tải tin nhắn: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Lỗi load messages: $e');
+      print('Lỗi load messages: $e');
       setState(() {
         isLoading = false;
         isLoadingMore = false;
@@ -300,11 +295,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   }
 
   // ==================== SEND MESSAGE ====================
-  Future<void> _sendMessage({
-    String? text,
-    File? file,
-    PlatformFile? platformFile,
-  }) async {
+  Future<void> _sendMessage({String? text,File? file,PlatformFile? platformFile,}) async {
     final messageText = text ?? _messageController.text.trim();
     if (messageText.isEmpty && file == null && platformFile == null) return;
 
@@ -365,7 +356,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         throw Exception(data['message'] ?? 'Gửi tin nhắn thất bại');
       }
     } catch (e) {
-      print('❌ Lỗi gửi tin nhắn: $e');
+      print('Lỗi gửi tin nhắn: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -416,7 +407,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         throw Exception(data['message'] ?? 'Xóa tin nhắn thất bại');
       }
     } catch (e) {
-      print('❌ Lỗi xóa tin nhắn: $e');
+      print('Lỗi xóa tin nhắn: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -449,7 +440,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         throw Exception(data['message'] ?? 'Sửa tin nhắn thất bại');
       }
     } catch (e) {
-      print('❌ Lỗi sửa tin nhắn: $e');
+      print('Lỗi sửa tin nhắn: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -701,7 +692,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                         _formatTime(message['thoiGian']),
                         style: const TextStyle(fontSize: 9, color: Colors.grey),
                       ),
-                      // ✅ Hiển thị menu nếu có quyền
                       if (canDelete) ...[
                         const SizedBox(width: 2),
                         PopupMenuButton<String>(
@@ -767,7 +757,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
-  // ==================== BUILD ====================
   @override
   Widget build(BuildContext context) {
     super.build(context);

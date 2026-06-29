@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/api.dart';
 import 'themSuaGroupScreen.dart';
 import 'messsage/chiTietGroupScreen.dart';
+import 'thanhVienGroupScreen.dart'; // Thêm import này
 
 class Danhsachgroupscreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -190,6 +191,7 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
       ),
     );
   }
+
   void _navigateToChat(Map group) {
     Navigator.push(
       context,
@@ -202,6 +204,22 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
     );
   }
 
+  void _navigateToMembers(Map group) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ThanhVienGroupScreen(
+          idGroup: group['idGroup'],
+          tenNhom: group['tenNhom'] ?? 'Nhóm',
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        fetchGroups();
+      }
+    });
+  }
+
   Widget _buildGroupItem(Map group) {
     final isMember = group['isMember'] ?? false;
     final isTruongNhom = group['isTruongNhom'] ?? false;
@@ -209,6 +227,8 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
     final memberCount = group['memberCount'] ?? 0;
     final canDelete = isGiangVien || isTruongNhom;
     final canEdit = isTruongNhom;
+    final canViewMembers = isTruongNhom;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -275,11 +295,14 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
                 ),
                 child: const Text("Rời"),
               ),
-            if (canEdit || canDelete)
+            // Chỉ hiển thị menu khi là trưởng nhóm hoặc giảng viên
+            if (isTruongNhom || isGiangVien)
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.grey),
                 onSelected: (value) {
-                  if (value == 'edit') {
+                  if (value == 'members') {
+                    _navigateToMembers(group);
+                  } else if (value == 'edit') {
                     _navigateToEditGroup(group);
                   } else if (value == 'delete') {
                     _confirmDeleteGroup(
@@ -289,6 +312,18 @@ class _Danhsachgroupscreen extends State<Danhsachgroupscreen> {
                   }
                 },
                 itemBuilder: (context) => [
+                  // Chỉ trưởng nhóm mới thấy mục "Xem thành viên"
+                  if (canViewMembers)
+                    const PopupMenuItem<String>(
+                      value: 'members',
+                      child: Row(
+                        children: [
+                          Icon(Icons.people, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Xem thành viên'),
+                        ],
+                      ),
+                    ),
                   if (canEdit)
                     const PopupMenuItem<String>(
                       value: 'edit',

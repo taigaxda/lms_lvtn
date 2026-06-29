@@ -2,6 +2,8 @@ import express from 'express'
 import { prisma } from '../prisma/client.js'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
+import { generateOTP, saveOTP, verifyOTP } from './otp.js';
+import { sendOTPEmail, sendPasswordChangedEmail } from './email.js';
 
 if (!process.env.JWT_SECRET) {
     throw new Error("Thiếu JWT_SECRET trong .env")
@@ -183,5 +185,231 @@ router.post("/luu-fcm-token", async(req, res)=>{
         res.status(500).json({ success: false, message: "Không thể lưu FCM token" })
     }
 })
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { taiKhoan, email } = req.body;
+        
+        if (!taiKhoan || !taiKhoan.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng nhập tài khoản'
+            });
+        }
+        
+        if (!email || !email.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng nhập email'
+            });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email không hợp lệ'
+            });
+        }
+
+        // Tìm người dùng theo tài khoản và email
+        const user = await prisma.nguoidung.findFirst({
+            where: {
+                taiKhoan: taiKhoan.trim(),
+                email: email.trim()
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tài khoản hoặc email không chính xác'
+            });
+        }
+
+        if (!user.trangThai) {
+            return res.status(403).json({
+                success: false,
+                message: 'Tài khoản đã bị khóa'
+            });
+        }
+
+        // Tạo OTP 6 số
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Lưu OTP với key là email (vẫn dùng email làm key)
+        saveOTP(email.trim(), otp);
+        
+        // Gửi email
+        const emailResult = await sendOTPEmail(email.trim(), otp, user.hoTen);
+        
+        if (!emailResult.success) {
+            return res.status(500).json({
+                success: false,
+                message: 'Không thể gửi email, vui lòng thử lại sau'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Mã OTP đã được gửi đến email của bạn',
+            data: {
+                email: email.trim(),
+                taiKhoan: taiKhoan.trim(),
+                expiresIn: '5 phút'
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi forgot-password:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Không thể xử lý yêu cầu'
+        });
+    }
+});
+
+// Route xác thực OTP - Thêm kiểm tra tài khoản
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { taiKhoan, otp } = req.body;
+        
+        if (!taiKhoan || !taiKhoan.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng nhập tài khoản'
+            });
+        }
+        
+        if (!otp || !otp.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng nhập mã OTP'
+            });
+        }
+
+        // Tìm user để lấy email
+        const user = await prisma.nguoidung.findUnique({
+            where: { taiKhoan: taiKhoan.trim() }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tài khoản không tồn tại'
+            });
+        }
+
+        // Kiểm tra OTP với email của user
+        const result = verifyOTP(user.email, otp.trim());
+        
+        if (!result.valid) {
+            return res.status(400).json({
+                success: false,
+                message: result.message,
+                remainingAttempts: result.remainingAttempts
+            });
+        }
+
+        // Tạo reset token
+        const resetToken = jwt.sign(
+            { 
+                taiKhoan: taiKhoan.trim(),
+                email: user.email 
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '5m' }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Xác thực OTP thành công',
+            data: {
+                resetToken: resetToken,
+                expiresIn: '5 phút'
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi verify-otp:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Không thể xác thực OTP'
+        });
+    }
+});
+
+// Route reset-password - Cập nhật để dùng taiKhoan
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { resetToken, newPassword, confirmPassword } = req.body;
+        
+        if (!resetToken || !newPassword || !confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng điền đầy đủ thông tin'
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mật khẩu phải có ít nhất 6 ký tự'
+            });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mật khẩu xác nhận không khớp'
+            });
+        }
+
+        // Verify reset token
+        let decoded;
+        try {
+            decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+        } catch (error) {
+            return res.status(401).json({
+                success: false,
+                message: 'Token không hợp lệ hoặc đã hết hạn'
+            });
+        }
+
+        const taiKhoan = decoded.taiKhoan;
+        
+        // Tìm người dùng theo tài khoản
+        const user = await prisma.nguoidung.findUnique({
+            where: { taiKhoan: taiKhoan }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Người dùng không tồn tại'
+            });
+        }
+
+        // Hash mật khẩu mới
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Cập nhật mật khẩu
+        await prisma.nguoidung.update({
+            where: { taiKhoan: taiKhoan },
+            data: { matKhau: hashedPassword }
+        });
+
+        // Gửi email xác nhận
+        await sendPasswordChangedEmail(user.email, user.hoTen);
+
+        res.status(200).json({
+            success: true,
+            message: 'Đặt lại mật khẩu thành công'
+        });
+    } catch (error) {
+        console.error('Lỗi reset-password:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Không thể đặt lại mật khẩu'
+        });
+    }
+});
 
 export default router

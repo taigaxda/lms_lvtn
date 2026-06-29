@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/authentication/dangKyScreen.dart';
 import 'package:frontend/api.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'forgotPasswordScreen.dart';
 
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
@@ -47,6 +48,12 @@ class _LoginscreenState extends State<Loginscreen> {
     catch(e){
       print("Lỗi gửi FCM token: $e");
     }
+  }
+  void _navigateToForgotPassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+    );
   }
 
   Future<void> dangNhap() async {
@@ -160,6 +167,17 @@ class _LoginscreenState extends State<Loginscreen> {
               decoration: const InputDecoration(
                 labelText: "Mật khẩu",
                 border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _navigateToForgotPassword,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                ),
+                child: const Text('Quên mật khẩu?'),
               ),
             ),
 

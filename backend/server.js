@@ -61,29 +61,27 @@ app.use('/messages',messageRoutes)
 app.use('/', test)
 
 io.on('connection', (socket) => {
-  console.log('✅ Client connected:', socket.id);
+  console.log('Client connected:', socket.id);
   
-  // ✅ Join group
+  // Join group
   socket.on('join-group', (groupId) => {
     socket.join(`group_${groupId}`);
-    console.log(`👤 User joined group: ${groupId}`);
+    console.log(`User joined group: ${groupId}`);
   });
   
-  // ✅ Leave group
+  // Leave group
   socket.on('leave-group', (groupId) => {
     socket.leave(`group_${groupId}`);
-    console.log(`👤 User left group: ${groupId}`);
+    console.log(`User left group: ${groupId}`);
   });
   
-  // ✅ Gửi tin nhắn
+  // Gửi tin nhắn
   socket.on('send-message', async (data) => {
-    console.log(`💬 Message from ${data.userName} to group ${data.groupId}: ${data.message}`);
-    // Lưu tin nhắn vào database (nếu cần)
-    // io.to(`group_${data.groupId}`).emit('receive-message', message);
+    console.log(`Message from ${data.userName} to group ${data.groupId}: ${data.message}`);
   });
   
   socket.on('disconnect', () => {
-    console.log('❌ Client disconnected:', socket.id);
+    console.log('Client disconnected:', socket.id);
   });
 });
 

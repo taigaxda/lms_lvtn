@@ -20,7 +20,7 @@ class SocketService {
         return;
       }
 
-      print('🔌 Đang kết nối Socket...');
+      print('Đang kết nối Socket...');
 
       _socket = IO.io(
         ApiConfig.baseUrl,

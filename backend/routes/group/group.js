@@ -565,36 +565,151 @@ router.post('/leave/:idGroup', checkGroupPermission, async (req, res) => {
         });
     }
 })
+// router.post('/kick/:idGroup', checkGroupPermission, async (req, res) => {
+//     try {
+//         const idGroup = parseInt(req.params.idGroup);
+//         const { idNguoiDungKick } = req.body;
+//         const idNguoiDung = req.user.idNguoiDung;
+//         const vaiTro = req.user.vaiTro;
+//         if (isNaN(idGroup)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "ID nhóm không hợp lệ"
+//             })
+//         }
+//         if (!idNguoiDungKick || isNaN(parseInt(idNguoiDungKick))) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "ID người dùng không hợp lệ"
+//             });
+//         }
+//         const idNguoiDungKickInt = parseInt(idNguoiDungKick);
+//         const group = await prisma.groups.findUnique({
+//             where: {
+//                 idGroup: idGroup
+//             }
+//         })
+//         if (!group) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Không tìm thấy nhóm"
+//             });
+//         }
+//         const kicker = await prisma.group_members.findUnique({
+//             where: {
+//                 idGroup_idNguoiDung: {
+//                     idGroup,
+//                     idNguoiDung
+//                 }
+//             }
+//         });
+
+//         if (!kicker) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Bạn không phải thành viên của nhóm này"
+//             });
+//         }
+//         if (kicker.vaiTroNhom !== 'truong_nhom') {
+//             return res.status(403).json({
+//                 success: false,
+//                 message: "Chỉ trưởng nhóm mới có quyền kick thành viên"
+//             });
+//         }
+//         const targetMember = await prisma.group_members.findUnique({
+//             where: {
+//                 idGroup_idNguoiDung: {
+//                     idGroup,
+//                     idNguoiDung: idNguoiDungKickInt
+//                 }
+//             }
+//         });
+
+//         if (!targetMember) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Thành viên không tồn tại trong nhóm"
+//             });
+//         }
+//         if (targetMember.vaiTroNhom === 'truong_nhom') {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Không thể kick trưởng nhóm"
+//             });
+//         }
+//         const targetUser = await prisma.nguoidung.findUnique({
+//             where: {
+//                 idNguoiDung: idNguoiDungKickInt
+//             }
+//         });
+
+//         if (targetUser?.vaiTro === 'giangvien') {
+//             return res.status(403).json({
+//                 success: false,
+//                 message: "Không thể kick giảng viên khỏi nhóm"
+//             });
+//         }
+//         if (idNguoiDungKickInt === idNguoiDung) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Bạn không thể kick chính mình"
+//             });
+//         }
+//         await prisma.group_members.delete({
+//             where: {
+//                 idGroup_idNguoiDung: {
+//                     idGroup,
+//                     idNguoiDung: idNguoiDungKickInt
+//                 }
+//             }
+//         });
+//         res.status(200).json({
+//             success: true,
+//             message: "Đã kick thành viên khỏi nhóm"
+//         });
+//     } catch (err) {
+//         res.status(500).json({
+//             success: false,
+//             message: err.message
+//         });
+//     }
+// })
 router.post('/kick/:idGroup', checkGroupPermission, async (req, res) => {
     try {
         const idGroup = parseInt(req.params.idGroup);
         const { idNguoiDungKick } = req.body;
         const idNguoiDung = req.user.idNguoiDung;
         const vaiTro = req.user.vaiTro;
+        
         if (isNaN(idGroup)) {
             return res.status(400).json({
                 success: false,
                 message: "ID nhóm không hợp lệ"
-            })
+            });
         }
+        
         if (!idNguoiDungKick || isNaN(parseInt(idNguoiDungKick))) {
             return res.status(400).json({
                 success: false,
                 message: "ID người dùng không hợp lệ"
             });
         }
+        
         const idNguoiDungKickInt = parseInt(idNguoiDungKick);
+        
         const group = await prisma.groups.findUnique({
             where: {
                 idGroup: idGroup
             }
-        })
+        });
+        
         if (!group) {
             return res.status(404).json({
                 success: false,
                 message: "Không tìm thấy nhóm"
             });
         }
+        
         const kicker = await prisma.group_members.findUnique({
             where: {
                 idGroup_idNguoiDung: {
@@ -610,6 +725,7 @@ router.post('/kick/:idGroup', checkGroupPermission, async (req, res) => {
                 message: "Bạn không phải thành viên của nhóm này"
             });
         }
+        
         if (kicker.vaiTroNhom !== 'truong_nhom') {
             return res.status(403).json({
                 success: false,
@@ -631,12 +747,6 @@ router.post('/kick/:idGroup', checkGroupPermission, async (req, res) => {
                 message: "Thành viên không tồn tại trong nhóm"
             });
         }
-        if (targetMember.vaiTroNhom === 'truong_nhom') {
-            return res.status(400).json({
-                success: false,
-                message: "Không thể kick trưởng nhóm"
-            });
-        }
         const targetUser = await prisma.nguoidung.findUnique({
             where: {
                 idNguoiDung: idNguoiDungKickInt
@@ -649,12 +759,14 @@ router.post('/kick/:idGroup', checkGroupPermission, async (req, res) => {
                 message: "Không thể kick giảng viên khỏi nhóm"
             });
         }
+
         if (idNguoiDungKickInt === idNguoiDung) {
             return res.status(400).json({
                 success: false,
                 message: "Bạn không thể kick chính mình"
             });
         }
+
         await prisma.group_members.delete({
             where: {
                 idGroup_idNguoiDung: {
@@ -663,15 +775,17 @@ router.post('/kick/:idGroup', checkGroupPermission, async (req, res) => {
                 }
             }
         });
+
         res.status(200).json({
             success: true,
             message: "Đã kick thành viên khỏi nhóm"
         });
+        
     } catch (err) {
         res.status(500).json({
             success: false,
             message: err.message
-        });
+        })
     }
 })
 router.put('/chuyenNT/:idGroup', checkGroupPermission, async (req, res) => {
