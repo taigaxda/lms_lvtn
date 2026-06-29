@@ -21,6 +21,8 @@ import commentsRoutes from './routes/comments.js'
 import groupRoutes from './routes/group/group.js'
 import messageRoutes from './routes/group/message.js'
 import cors from 'cors'
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express()
 const PORT = process.env.PORT || 5000;
@@ -29,10 +31,15 @@ const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+    origin: process.env.CLIENT_URL || '*',
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
+
 app.set('io', io);
 
 app.use(cors())
