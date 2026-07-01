@@ -1,6 +1,7 @@
 import express from 'express'
 import { prisma } from '../../prisma/client.js'
 import { checkGiangVien } from '../middleware.js'
+import {sendNotificationToClass} from '../firebase.js'
 
 const router = express.Router()
 router.get('/hethong', checkGiangVien, async (req, res) => {
@@ -170,6 +171,26 @@ router.post('/:idKhoaHoc', checkGiangVien, async (req, res) => {
                 }
             }
         })
+        try {
+            const fcmResult = await sendNotificationToClass(
+                idKhoaHoc,
+                `${req.user.hoTen}`,
+                tieuDe,
+                {
+                    type: 'announcement',
+                    khoaHocId: idKhoaHoc.toString(),
+                    thongBaoId: thongBao.idThongBao.toString(),
+                    tieuDe: tieuDe,
+                    noiDung: noiDung,
+                    ngayTao: thongBao.ngayTao.toISOString(),
+                },
+                req.user.idNguoiDung
+            );
+            
+            console.log('FCM sent:', fcmResult);
+        } catch (fcmError) {
+            console.error('FCM error:', fcmError);
+        }
         return res.status(201).json({
             success: true,
             message: "Tạo thông báo thành công",

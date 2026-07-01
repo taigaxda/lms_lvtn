@@ -43,11 +43,27 @@ class _LoginscreenState extends State<Loginscreen> {
           "token": fcmToken
         }),
       );
-      print("Đã gửi FCM token");
+      print("Đã gửi FCM token $fcmToken");
     }
     catch(e){
       print("Lỗi gửi FCM token: $e");
     }
+  }
+   void _setupFCMListeners() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Nhận thông báo khi app đang mở: ${message.notification?.title}');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message.notification?.title ?? 'Thông báo mới',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    });
   }
   void _navigateToForgotPassword() {
     Navigator.push(
@@ -82,6 +98,7 @@ class _LoginscreenState extends State<Loginscreen> {
         await prefs.setString("hoTen", user["hoTen"]);
         await prefs.setString("vaiTro", user["vaiTro"]);
         await guiFCMToken(user["id"]);
+        _setupFCMListeners();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Chào ${user["hoTen"]} 👋")),
