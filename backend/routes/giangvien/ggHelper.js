@@ -89,8 +89,10 @@ export const uploadToCloudinary = async (file) => {
             public_id: publicId,
             use_filename: true,
             unique_filename: false,
+            // access_mode: "public",   // ✅ Thêm dòng này
+            type: "upload",
             // ✅ Thêm flag để cho phép tải file
-            flags: resourceType === "raw" ? "attachment" : undefined,
+            // flags: resourceType === "raw" ? "attachment" : undefined,
         });
 
         console.log(`✅ Uploaded: ${result.secure_url}`);
