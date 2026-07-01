@@ -175,6 +175,11 @@ router.post("/luu-fcm-token", async(req, res)=>{
                 token: token
             }
         })
+        console.log("✅ [FCM] Lưu token THÀNH CÔNG!");
+        console.log("   📌 TOKEN ĐÃ LƯU:", token);  // Log lại token để copy
+        console.log("   📋 Copy token này để test FCM:");
+        console.log(`   👉 ${token}`);  // Dễ copy
+        console.log("========================================\n");
         res.json({
             success: true,
             message: "Lưu FCMToken thành công"
