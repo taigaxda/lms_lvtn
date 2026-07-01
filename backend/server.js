@@ -20,6 +20,7 @@ import thongBaoAdminRoutes from './routes/admin/thongbao.js'
 import commentsRoutes from './routes/comments.js'
 import groupRoutes from './routes/group/group.js'
 import messageRoutes from './routes/group/message.js'
+import topicsRoutes from './routes/group/topic.js'
 import cors from 'cors'
 import dotenv from 'dotenv';
 dotenv.config();
@@ -65,6 +66,7 @@ app.use('/admin/thongbao',thongBaoAdminRoutes)
 app.use('/comments',commentsRoutes)
 app.use('/groups',groupRoutes)
 app.use('/messages',messageRoutes)
+app.use('/topics',topicsRoutes)
 app.use('/', test)
 
 io.on('connection', (socket) => {
@@ -172,6 +174,82 @@ io.on('connection', (socket) => {
       userId: data.userId,
       userName: data.userName,
       isTyping: data.isTyping,
+    });
+  });
+
+  socket.on('join-topic', (data) => {
+    let topicId;
+    if (typeof data === 'object' && data !== null) {
+      topicId = data.topicId || data.id || data.topic;
+    } else {
+      topicId = data;
+    }
+    
+    if (topicId) {
+      socket.join(`topic_${topicId}`);
+      console.log(`📢 User joined topic: ${topicId}`);
+      socket.emit('joined-topic', { topicId, success: true });
+    } else {
+      console.log('❌ Invalid topicId:', data);
+    }
+  });
+
+  // ✅ Leave topic
+  socket.on('leave-topic', (data) => {
+    let topicId;
+    if (typeof data === 'object' && data !== null) {
+      topicId = data.topicId || data.id || data.topic;
+    } else {
+      topicId = data;
+    }
+    
+    if (topicId) {
+      socket.leave(`topic_${topicId}`);
+      console.log(`🚪 User left topic: ${topicId}`);
+    }
+  });
+
+  // ✅ Gửi tin nhắn trong topic - Broadcast đến tất cả trong topic
+  socket.on('send-topic-message', (data) => {
+    console.log(`📤 Topic message from ${data.userName || 'Unknown'} to topic ${data.topicId}: ${data.content || data.message}`);
+    
+    const topicId = data.topicId;
+    if (!topicId) {
+      console.log('❌ Missing topicId in send-topic-message');
+      return;
+    }
+    
+    io.to(`topic_${topicId}`).emit('receive-topic-message', {
+      idMessage: data.idMessage || Date.now(),
+      content: data.content || data.message || '',
+      fileUrl: data.fileUrl || null,
+      userId: data.userId,
+      userName: data.userName || 'Unknown',
+      vaiTro: data.vaiTro || 'hocvien',
+      thoiGian: data.thoiGian || new Date().toISOString(),
+    });
+  });
+
+  // ✅ Sửa tin nhắn trong topic
+  socket.on('edit-topic-message', (data) => {
+    const topicId = data.topicId;
+    if (!topicId) return;
+    
+    io.to(`topic_${topicId}`).emit('topic-message-edited', {
+      idMessage: data.idMessage,
+      noiDung: data.newContent || data.content,
+      edited: true,
+    });
+  });
+
+  // ✅ Xóa tin nhắn trong topic
+  socket.on('delete-topic-message', (data) => {
+    const topicId = data.topicId;
+    if (!topicId) return;
+    
+    io.to(`topic_${topicId}`).emit('topic-message-deleted', {
+      idMessage: data.idMessage,
+      deleted: true,
     });
   });
 

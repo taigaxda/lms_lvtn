@@ -25,7 +25,8 @@
 //   State<Chitietgroupscreen> createState() => _ChitietgroupscreenState();
 // }
 
-// class _ChitietgroupscreenState extends State<Chitietgroupscreen> with AutomaticKeepAliveClientMixin {
+// class _ChitietgroupscreenState extends State<Chitietgroupscreen>
+//     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
 //   final TextEditingController _messageController = TextEditingController();
 //   final ScrollController _scrollController = ScrollController();
 //   final String apiUrl = '${ApiConfig.baseUrl}/messages';
@@ -36,9 +37,10 @@
 //   bool hasMore = true;
 //   bool isLoadingMore = false;
 //   int currentPage = 1;
-//   final int limit = 5;
+//   final int limit = 20;
 //   int userId = 0;
 //   String userName = '';
+//   String userVaiTro = '';
 //   File? _selectedFile;
 //   PlatformFile? _pickedFile;
 //   bool _isSocketConnected = false;
@@ -50,17 +52,24 @@
 //   @override
 //   void initState() {
 //     super.initState();
+//     WidgetsBinding.instance.addObserver(this);
 //     _loadUserInfo();
 //   }
 
 //   @override
 //   void dispose() {
+//     WidgetsBinding.instance.removeObserver(this);
 //     _messageController.dispose();
 //     _scrollController.dispose();
-//     if (_isSocketConnected) {
-//       SocketService.leaveGroup(widget.groupId);
-//     }
+//     SocketService.leaveGroup(widget.groupId);
 //     super.dispose();
+//   }
+
+//   @override
+//   void didChangeAppLifecycleState(AppLifecycleState state) {
+//     if (state == AppLifecycleState.resumed) {
+//       _checkAndReconnectSocket();
+//     }
 //   }
 
 //   // ==================== LOAD USER INFO ====================
@@ -69,16 +78,18 @@
 //       final prefs = await SharedPreferences.getInstance();
 //       final id = prefs.getInt('userId') ?? 0;
 //       final name = prefs.getString('hoTen') ?? '';
+//       final vaiTro = prefs.getString('vaiTro') ?? 'hocvien';
 
-//       print('User loaded - ID: $id, Name: $name');
+//       print('User loaded - ID: $id, Name: $name, Role: $vaiTro');
 
 //       setState(() {
 //         userId = id;
 //         userName = name;
+//         userVaiTro = vaiTro;
 //       });
 
 //       if (userId != 0) {
-//         _connectSocket();
+//         await _connectSocket();
 //         await _checkTruongNhom();
 //         await _loadMessages();
 //       }
@@ -87,7 +98,7 @@
 //     }
 //   }
 
-//   //Hàm kiểm tra trưởng nhóm
+//   // ==================== CHECK TRUONG NHOM ====================
 //   Future<void> _checkTruongNhom() async {
 //     try {
 //       final prefs = await SharedPreferences.getInstance();
@@ -115,30 +126,31 @@
 //   }
 
 //   // ==================== SOCKET ====================
-//   void _connectSocket() {
+//   Future<void> _connectSocket() async {
 //     if (userId == 0) return;
 
-//     if (!SocketService.isConnected()) {
-//       SocketService.connect();
-//     }
+//   print('🔍 [UI] Connecting socket...');
 
-//     _waitForSocketConnection();
+//   if (!SocketService.isConnected()) {
+//     print('🔍 [UI] Socket not connected, calling connect()...');
+//     SocketService.connect();
 //   }
 
-//   void _waitForSocketConnection() {
+//   // ✅ Thêm log all events
+//   SocketService.logAllEvents();
+
+//   _waitForSocketConnection();
+//   }
+
+//   Future<void> _waitForSocketConnection() async {
 //     int attempts = 0;
-//     const maxAttempts = 10;
+//     const maxAttempts = 20;
 
-//     Future.delayed(const Duration(milliseconds: 300), () {
-//       _checkSocketConnection(attempts, maxAttempts);
-//     });
-//   }
-
-//   void _checkSocketConnection(int attempts, int maxAttempts) {
-//     if (mounted) {
+//     while (attempts < maxAttempts) {
 //       if (SocketService.isConnected()) {
 //         _isSocketConnected = true;
-//         print('Socket đã kết nối, join group...');
+//         print('✅ Socket connected, joining group ${widget.groupId}...');
+
 //         SocketService.joinGroup(widget.groupId);
 
 //         SocketService.onReceiveMessage((data) {
@@ -150,55 +162,97 @@
 //         SocketService.onMessageDeleted((data) {
 //           _onMessageDeleted(data);
 //         });
-//       } else if (attempts < maxAttempts) {
-//         Future.delayed(const Duration(milliseconds: 300), () {
-//           if (mounted) {
-//             _checkSocketConnection(attempts + 1, maxAttempts);
-//           }
-//         });
-//       } else {
-//         print('Không thể kết nối Socket sau $maxAttempts lần thử');
+
+//         setState(() {});
+//         return;
 //       }
+
+//       attempts++;
+//       print('⏳ Waiting for socket... ($attempts/$maxAttempts)');
+//       await Future.delayed(const Duration(milliseconds: 500));
+//     }
+
+//     print('❌ Cannot connect to socket after $maxAttempts attempts');
+//     setState(() {
+//       _isSocketConnected = false;
+//     });
+//   }
+
+//   void _checkAndReconnectSocket() {
+//     if (!_isSocketConnected && userId != 0) {
+//       print('🔄 Reconnecting socket...');
+//       _connectSocket();
 //     }
 //   }
 
+//   void _reconnectSocket() {
+//     setState(() {
+//       _isSocketConnected = false;
+//     });
+//     SocketService.disconnect();
+//     SocketService.connect();
+//     _waitForSocketConnection();
+//   }
+
+//   // ==================== SOCKET EVENT HANDLERS ====================
 //   void _onReceiveMessage(Map<String, dynamic> data) {
-//     if (mounted) {
-//       setState(() {
-//         messages.add(data);
-//       });
+//     if (!mounted) return;
+//     print('📩 Received message: ${data['content'] ?? data['noiDung']}');
+
+//     // Kiểm tra nếu tin nhắn đã tồn tại thì không thêm nữa
+//     final exists = messages.any((m) => m['idMessage'] == data['idMessage']);
+//     if (exists) return;
+
+//     // ✅ Format message để khớp với cấu trúc UI
+//     final newMessage = {
+//       'idMessage': data['idMessage'] ?? DateTime.now().millisecondsSinceEpoch,
+//       'noiDung': data['content'] ?? data['noiDung'] ?? '',
+//       'fileUrl': data['fileUrl'],
+//       'thoiGian': data['thoiGian'] ?? DateTime.now().toIso8601String(),
+//       'nguoidung': {
+//         'idNguoiDung': data['userId'] ?? data['nguoidung']?['idNguoiDung'] ?? 0,
+//         'hoTen': data['userName'] ?? data['nguoidung']?['hoTen'] ?? 'Unknown',
+//         'vaiTro': data['vaiTro'] ?? data['nguoidung']?['vaiTro'] ?? 'hocvien',
+//       }
+//     };
+
+//     setState(() {
+//       messages.add(newMessage);
+//     });
+
+//     WidgetsBinding.instance.addPostFrameCallback((_) {
 //       _scrollToBottom();
-//     }
+//     });
 //   }
 
 //   void _onMessageEdited(Map<String, dynamic> data) {
-//     if (mounted) {
-//       setState(() {
-//         final index = messages.indexWhere(
-//           (m) => m['idMessage'] == data['idMessage'],
-//         );
-//         if (index != -1) {
-//           messages[index] = data;
-//         }
-//       });
-//     }
+//     if (!mounted) return;
+//     print('📝 Message edited: ${data['idMessage']}');
+
+//     setState(() {
+//       final index = messages.indexWhere(
+//         (m) => m['idMessage'] == data['idMessage'],
+//       );
+//       if (index != -1) {
+//         messages[index]['noiDung'] = data['noiDung'] ?? data['newContent'];
+//         messages[index]['edited'] = true;
+//       }
+//     });
 //   }
 
 //   void _onMessageDeleted(Map<String, dynamic> data) {
-//     if (mounted) {
-//       setState(() {
-//         messages.removeWhere((m) => m['idMessage'] == data['idMessage']);
-//       });
-//     }
+//     if (!mounted) return;
+//     print('🗑️ Message deleted: ${data['idMessage']}');
+
+//     setState(() {
+//       messages.removeWhere((m) => m['idMessage'] == data['idMessage']);
+//     });
 //   }
 
 //   // ==================== LOAD MESSAGES ====================
 //   Future<void> _loadMessages({bool loadMore = false}) async {
 //     if (loadMore && isLoading) return;
 //     if (loadMore && !hasMore) return;
-
-//     final startTime = DateTime.now();
-//     print('=== BẮT ĐẦU LOAD ===');
 
 //     setState(() {
 //       if (loadMore) {
@@ -216,8 +270,7 @@
 //         throw Exception('Chưa đăng nhập');
 //       }
 
-//       final url ='$apiUrl/messgr/${widget.groupId}?page=$currentPage&limit=$limit';
-//       print('URL: $url');
+//       final url = '$apiUrl/messgr/${widget.groupId}?page=$currentPage&limit=$limit';
 
 //       final response = await http.get(
 //         Uri.parse(url),
@@ -227,18 +280,10 @@
 //         },
 //       );
 
-//       final endTime = DateTime.now();
-//       final duration = endTime.difference(startTime);
-//       print('API response trong ${duration.inMilliseconds}ms');
-//       print('Status Code: ${response.statusCode}');
-//       print('Response Body: ${response.body}');
-
 //       if (response.statusCode == 200) {
 //         final data = jsonDecode(response.body);
 //         final newMessages = List<Map<String, dynamic>>.from(data['data'] ?? []);
 //         final pagination = data['pagination'];
-
-//         print('Load ${newMessages.length} tin nhắn, có ${pagination['total']} tổng cộng',);
 
 //         setState(() {
 //           if (loadMore) {
@@ -295,7 +340,7 @@
 //   }
 
 //   // ==================== SEND MESSAGE ====================
-//   Future<void> _sendMessage({String? text,File? file,PlatformFile? platformFile,}) async {
+//   Future<void> _sendMessage({String? text, File? file, PlatformFile? platformFile}) async {
 //     final messageText = text ?? _messageController.text.trim();
 //     if (messageText.isEmpty && file == null && platformFile == null) return;
 
@@ -350,6 +395,11 @@
 //           _selectedFile = null;
 //           _pickedFile = null;
 //         });
+
+//         // ✅ Gửi qua Socket để realtime (server sẽ broadcast)
+//         if (_isSocketConnected) {
+//           // Server sẽ tự động broadcast khi nhận được tin nhắn mới
+//         }
 //       } else {
 //         final responseData = await response.stream.bytesToString();
 //         final data = jsonDecode(responseData);
@@ -592,25 +642,16 @@
 //     final isMe = message['nguoidung']['idNguoiDung'] == userId;
 //     final hasFile = message['fileUrl'] != null && message['fileUrl'].isNotEmpty;
 //     final hasText = message['noiDung'] != null && message['noiDung'].isNotEmpty;
-
-//     // ✅ Kiểm tra tin nhắn có phải của Giảng viên không
 //     final isGiangVienMessage = message['nguoidung']['vaiTro'] == 'giangvien';
 
-//     // ✅ Quyền xóa:
-//     // - Được xóa nếu là tin nhắn của mình (isMe) HOẶC là trưởng nhóm (_isTruongNhom)
-//     // - KHÔNG được xóa nếu là tin nhắn của Giảng viên (trừ khi chính GV đó)
 //     final canDelete = (isMe || _isTruongNhom) && !isGiangVienMessage;
-
-//     // ✅ Chỉ được sửa tin nhắn của mình
 //     final canEdit = isMe;
 
 //     return RepaintBoundary(
 //       child: Padding(
 //         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
 //         child: Row(
-//           mainAxisAlignment: isMe
-//               ? MainAxisAlignment.end
-//               : MainAxisAlignment.start,
+//           mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
 //           children: [
 //             Container(
 //               padding: const EdgeInsets.all(10),
@@ -633,7 +674,6 @@
 //                           ),
 //                         ),
 //                         const SizedBox(width: 4),
-//                         // ✅ Hiển thị badge "GV" nếu là Giảng viên
 //                         if (isGiangVienMessage)
 //                           Container(
 //                             padding: const EdgeInsets.symmetric(
@@ -712,11 +752,7 @@
 //                                 value: 'edit',
 //                                 child: Row(
 //                                   children: [
-//                                     Icon(
-//                                       Icons.edit,
-//                                       color: Colors.orange,
-//                                       size: 16,
-//                                     ),
+//                                     Icon(Icons.edit, color: Colors.orange, size: 16),
 //                                     SizedBox(width: 4),
 //                                     Text('Sửa', style: TextStyle(fontSize: 13)),
 //                                   ],
@@ -726,11 +762,7 @@
 //                               value: 'delete',
 //                               child: Row(
 //                                 children: [
-//                                   Icon(
-//                                     Icons.delete,
-//                                     color: Colors.red,
-//                                     size: 16,
-//                                   ),
+//                                   Icon(Icons.delete, color: Colors.red, size: 16),
 //                                   SizedBox(width: 4),
 //                                   Text('Xóa', style: TextStyle(fontSize: 13)),
 //                                 ],
@@ -757,6 +789,7 @@
 //     return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 //   }
 
+//   // ==================== BUILD ====================
 //   @override
 //   Widget build(BuildContext context) {
 //     super.build(context);
@@ -767,6 +800,14 @@
 //         backgroundColor: Colors.blue,
 //         foregroundColor: Colors.white,
 //         actions: [
+//           IconButton(
+//             icon: Icon(
+//               _isSocketConnected ? Icons.wifi : Icons.wifi_off,
+//               color: _isSocketConnected ? Colors.green : Colors.red,
+//             ),
+//             onPressed: _reconnectSocket,
+//             tooltip: _isSocketConnected ? 'Đã kết nối' : 'Mất kết nối, nhấn để kết nối lại',
+//           ),
 //           IconButton(
 //             icon: const Icon(Icons.refresh),
 //             onPressed: () => _loadMessages(),
@@ -784,16 +825,9 @@
 //                     child: Column(
 //                       mainAxisAlignment: MainAxisAlignment.center,
 //                       children: [
-//                         Icon(
-//                           Icons.chat_bubble_outline,
-//                           size: 64,
-//                           color: Colors.grey,
-//                         ),
+//                         Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
 //                         SizedBox(height: 16),
-//                         Text(
-//                           'Chưa có tin nhắn',
-//                           style: TextStyle(color: Colors.grey),
-//                         ),
+//                         Text('Chưa có tin nhắn', style: TextStyle(color: Colors.grey)),
 //                         SizedBox(height: 8),
 //                         Text(
 //                           'Hãy là người đầu tiên nhắn tin!',
@@ -804,12 +838,13 @@
 //                   )
 //                 : ListView.builder(
 //                     controller: _scrollController,
-//                     reverse: false,
+//                     reverse: true,
 //                     cacheExtent: 100.0,
 //                     padding: const EdgeInsets.symmetric(vertical: 8),
 //                     itemCount: messages.length,
 //                     itemBuilder: (context, index) {
-//                       return _buildMessageItem(messages[index]);
+//                       final reversedIndex = messages.length - 1 - index;
+//                       return _buildMessageItem(messages[reversedIndex]);
 //                     },
 //                   ),
 //           ),
@@ -895,10 +930,7 @@
 //               decoration: const InputDecoration(
 //                 hintText: 'Nhập tin nhắn...',
 //                 border: InputBorder.none,
-//                 contentPadding: EdgeInsets.symmetric(
-//                   horizontal: 8,
-//                   vertical: 6,
-//                 ),
+//                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
 //               ),
 //               onChanged: (text) {
 //                 if (text.isNotEmpty && userId != 0 && _isSocketConnected) {
@@ -1036,10 +1068,7 @@
 //             children: [
 //               Icon(Icons.error_outline, color: Colors.white, size: 48),
 //               SizedBox(height: 16),
-//               Text(
-//                 'Không thể tải video',
-//                 style: TextStyle(color: Colors.white),
-//               ),
+//               Text('Không thể tải video', style: TextStyle(color: Colors.white)),
 //             ],
 //           ),
 //         ),
@@ -1061,6 +1090,8 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:frontend/api.dart';
 import 'socketService.dart';
+import 'topic/danhSachTopicScreen.dart';
+import 'topic/chiTietTopicScreen.dart';
 
 class Chitietgroupscreen extends StatefulWidget {
   final int groupId;
@@ -1180,17 +1211,17 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   Future<void> _connectSocket() async {
     if (userId == 0) return;
 
-  print('🔍 [UI] Connecting socket...');
-  
-  if (!SocketService.isConnected()) {
-    print('🔍 [UI] Socket not connected, calling connect()...');
-    SocketService.connect();
-  }
+    print('🔍 [UI] Connecting socket...');
 
-  // ✅ Thêm log all events
-  SocketService.logAllEvents();
-  
-  _waitForSocketConnection();
+    if (!SocketService.isConnected()) {
+      print('🔍 [UI] Socket not connected, calling connect()...');
+      SocketService.connect();
+    }
+
+    // ✅ Thêm log all events
+    SocketService.logAllEvents();
+
+    _waitForSocketConnection();
   }
 
   Future<void> _waitForSocketConnection() async {
@@ -1249,7 +1280,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   void _onReceiveMessage(Map<String, dynamic> data) {
     if (!mounted) return;
     print('📩 Received message: ${data['content'] ?? data['noiDung']}');
-    
+
     // Kiểm tra nếu tin nhắn đã tồn tại thì không thêm nữa
     final exists = messages.any((m) => m['idMessage'] == data['idMessage']);
     if (exists) return;
@@ -1270,7 +1301,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     setState(() {
       messages.add(newMessage);
     });
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
@@ -1279,7 +1310,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   void _onMessageEdited(Map<String, dynamic> data) {
     if (!mounted) return;
     print('📝 Message edited: ${data['idMessage']}');
-    
+
     setState(() {
       final index = messages.indexWhere(
         (m) => m['idMessage'] == data['idMessage'],
@@ -1294,7 +1325,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   void _onMessageDeleted(Map<String, dynamic> data) {
     if (!mounted) return;
     print('🗑️ Message deleted: ${data['idMessage']}');
-    
+
     setState(() {
       messages.removeWhere((m) => m['idMessage'] == data['idMessage']);
     });
@@ -1446,8 +1477,8 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
           _selectedFile = null;
           _pickedFile = null;
         });
-        
-        // ✅ Gửi qua Socket để realtime (server sẽ broadcast)
+
+        // Gửi qua Socket để realtime (server sẽ broadcast)
         if (_isSocketConnected) {
           // Server sẽ tự động broadcast khi nhận được tin nhắn mới
         }
@@ -1688,6 +1719,188 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
+  // ==================== TẠO CHỦ ĐỀ TỪ TIN NHẮN ====================
+  void _showCreateTopicDialog(Map<String, dynamic> message) {
+    final TextEditingController _tieuDeController = TextEditingController(
+      text: 'Thảo luận: ${message['noiDung']?.substring(0, message['noiDung']!.length > 50 ? 50 : message['noiDung']!.length)}...',
+    );
+    final TextEditingController _moTaController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Tạo chủ đề thảo luận'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hiển thị tin nhắn gốc
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '📎 Tin nhắn gốc:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message['noiDung'] ?? '',
+                    style: const TextStyle(fontSize: 14),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (message['fileUrl'] != null && message['fileUrl'].isNotEmpty)
+                    Text(
+                      '📎 Có file đính kèm',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _tieuDeController,
+              decoration: const InputDecoration(
+                labelText: 'Tiêu đề chủ đề *',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _moTaController,
+              decoration: const InputDecoration(
+                labelText: 'Mô tả (không bắt buộc)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_tieuDeController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng nhập tiêu đề')),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              await _createTopicFromMessage(
+                idMessage: message['idMessage'],
+                tieuDe: _tieuDeController.text.trim(),
+                moTa: _moTaController.text.trim(),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Tạo chủ đề'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createTopicFromMessage({
+    required int idMessage,
+    required String tieuDe,
+    required String moTa,
+  }) async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/topics/create-from-message/${widget.groupId}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'idMessageGoc': idMessage,
+          'tieuDe': tieuDe,
+          'moTa': moTa,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tạo chủ đề thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        final topic = data['data'];
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChiTietTopicScreen(
+              topicId: topic['id'],
+              tieuDe: topic['tieuDe'],
+              idGroup: widget.groupId,
+            ),
+          ),
+        );
+      } else {
+        throw Exception(data['message'] ?? 'Tạo chủ đề thất bại');
+      }
+    } catch (e) {
+      print('Lỗi tạo chủ đề: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // ==================== ĐIỀU HƯỚNG ĐẾN DANH SÁCH CHỦ ĐỀ ====================
+  void _navigateToTopics() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DanhSachTopicScreen(
+          idGroup: widget.groupId,
+          tenNhom: widget.tenNhom,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        // Refresh nếu có thay đổi
+      }
+    });
+  }
+
   // ==================== BUILD MESSAGE ITEM ====================
   Widget _buildMessageItem(Map<String, dynamic> message) {
     final isMe = message['nguoidung']['idNguoiDung'] == userId;
@@ -1695,7 +1908,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     final hasText = message['noiDung'] != null && message['noiDung'].isNotEmpty;
     final isGiangVienMessage = message['nguoidung']['vaiTro'] == 'giangvien';
 
-    final canDelete = (isMe || _isTruongNhom) && !isGiangVienMessage;
+     final canDelete = isMe || (_isTruongNhom && !isGiangVienMessage);
     final canEdit = isMe;
 
     return RepaintBoundary(
@@ -1783,45 +1996,59 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                         _formatTime(message['thoiGian']),
                         style: const TextStyle(fontSize: 9, color: Colors.grey),
                       ),
-                      if (canDelete) ...[
-                        const SizedBox(width: 2),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert, size: 14),
-                          onSelected: (value) {
-                            if (value == 'edit' && canEdit) {
-                              _showEditDialog(
-                                message['idMessage'],
-                                message['noiDung'] ?? '',
-                              );
-                            } else if (value == 'delete') {
-                              _showDeleteDialog(message['idMessage']);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            if (canEdit)
-                              const PopupMenuItem<String>(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, color: Colors.orange, size: 16),
-                                    SizedBox(width: 4),
-                                    Text('Sửa', style: TextStyle(fontSize: 13)),
-                                  ],
-                                ),
+                      // ✅ Menu 3 chấm với tất cả chức năng
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, size: 14),
+                        onSelected: (value) {
+                          if (value == 'create_topic') {
+                            _showCreateTopicDialog(message);
+                          } else if (value == 'edit' && canEdit) {
+                            _showEditDialog(
+                              message['idMessage'],
+                              message['noiDung'] ?? '',
+                            );
+                          } else if (value == 'delete') {
+                            _showDeleteDialog(message['idMessage']);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          // ✅ Tạo chủ đề (hiển thị cho tất cả)
+                          const PopupMenuItem<String>(
+                            value: 'create_topic',
+                            child: Row(
+                              children: [
+                                Icon(Icons.forum, color: Colors.blue, size: 16),
+                                SizedBox(width: 8),
+                                Text('Tạo chủ đề', style: TextStyle(fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                          // ✅ Sửa (chỉ tin nhắn của mình)
+                          if (canEdit)
+                            const PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, color: Colors.orange, size: 16),
+                                  SizedBox(width: 8),
+                                  Text('Sửa', style: TextStyle(fontSize: 13)),
+                                ],
                               ),
+                            ),
+                          // ✅ Xóa (tin nhắn của mình hoặc trưởng nhóm)
+                          if (canDelete)
                             const PopupMenuItem<String>(
                               value: 'delete',
                               child: Row(
                                 children: [
                                   Icon(Icons.delete, color: Colors.red, size: 16),
-                                  SizedBox(width: 4),
+                                  SizedBox(width: 8),
                                   Text('Xóa', style: TextStyle(fontSize: 13)),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ],
                   ),
                 ],
@@ -1851,6 +2078,12 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
+          // ✅ Nút xem danh sách chủ đề
+          IconButton(
+            icon: const Icon(Icons.forum_outlined),
+            onPressed: _navigateToTopics,
+            tooltip: 'Chủ đề thảo luận',
+          ),
           IconButton(
             icon: Icon(
               _isSocketConnected ? Icons.wifi : Icons.wifi_off,

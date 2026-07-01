@@ -12,12 +12,17 @@ import 'package:frontend/hocvien/chuaHTHocVienScreen.dart';
 import 'package:frontend/admin/thongbao/thongBaoAdminScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:webview_flutter/webview_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // await initWebView();
   await Firebase.initializeApp();
   await setupFCM();
   runApp(const MyApp());
 }
+// Future<void> initWebView() async {
+  
+// }
 
 Future<void> setupFCM() async {
   FirebaseMessaging messaging = FirebaseMessaging.instance;

@@ -27,6 +27,9 @@ model nguoidung {
   messages       messages[]
   announcements  announcements[] 
   fcm_tokens     fcm_tokens[]
+  discussion_topics discussion_topics[]        // người tạo chủ đề
+  discussion_messages discussion_messages[]    // tin nhắn trong chủ đề
+  discussion_participants discussion_participants[] // người tham gia
 }
 
 enum nguoidung_vaiTro {
@@ -241,6 +244,7 @@ model groups {
   khoahoc khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
   members group_members[]
   messages messages[]
+  discussion_topics discussion_topics[]
 }
 
 model group_members {
@@ -270,6 +274,7 @@ model messages {
 
   group groups @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
+  discussion_topics discussion_topics[]
 }
 
 model fcm_tokens {
@@ -278,4 +283,50 @@ model fcm_tokens {
   token        String   @unique
 
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+}
+model discussion_topics {
+  id          Int      @id @default(autoincrement())
+  idGroup     Int
+  idNguoiTao  Int
+  idMessageGoc Int?    // Tin nhắn gốc để tạo chủ đề
+  tieuDe      String
+  moTa        String?
+  trangThai   String   @default("active") // active, closed, archived
+  ngayTao     DateTime @default(now())
+  ngayCapNhat DateTime @updatedAt
+
+  group       groups   @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
+  nguoidung   nguoidung @relation(fields: [idNguoiTao], references: [idNguoiDung], onDelete: Cascade)
+  tinNhanGoc  messages? @relation(fields: [idMessageGoc], references: [idMessage], onDelete: SetNull)
+  messages    discussion_messages[]
+  participants discussion_participants[]
+
+  @@index([idGroup])
+  @@index([idMessageGoc])
+}
+
+model discussion_messages {
+  id          Int      @id @default(autoincrement())
+  idTopic     Int
+  idNguoiDung Int
+  noiDung     String?
+  fileUrl     String?
+  ngayTao     DateTime @default(now())
+
+  topic      discussion_topics @relation(fields: [idTopic], references: [id], onDelete: Cascade)
+  nguoidung  nguoidung         @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+
+  @@index([idTopic])
+}
+
+model discussion_participants {
+  id          Int      @id @default(autoincrement())
+  idTopic     Int
+  idNguoiDung Int
+  ngayThamGia DateTime @default(now())
+
+  topic      discussion_topics @relation(fields: [idTopic], references: [id], onDelete: Cascade)
+  nguoidung  nguoidung         @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
+
+  @@unique([idTopic, idNguoiDung])
 }
