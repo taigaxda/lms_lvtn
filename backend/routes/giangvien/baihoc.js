@@ -295,4 +295,107 @@ router.put('/:idBaiHoc', checkGiangVien, async (req, res) => {
     }
 })
 
+router.get('/thoigianhoc/:idBaiHoc', checkGiangVien, async (req, res) => {
+    try {
+        const idBaiHoc = parseInt(req.params.idBaiHoc)
+        const idGiangVien = req.user.idNguoiDung
+        const baiHoc = await prisma.baihoc.findFirst({
+            where: {
+                idBaiHoc: idBaiHoc,
+                khoahoc: {
+                    idGiangVien: idGiangVien
+                }
+            },
+            include: {
+                khoahoc: true
+            }
+        })
+        if (!baiHoc) {
+            return res.status(403).json({
+                success: false,
+                message: "Bạn không có quyền hoặc bài học không tồn tại"
+            })
+        }
+        const dsHocVien = await prisma.dangky_khoahoc.findMany({
+            where: {
+                idKhoaHoc: baiHoc.idKhoaHoc
+            },
+            include: {
+                nguoidung: {
+                    select: {
+                        idNguoiDung: true,
+                        hoTen: true,
+                        taiKhoan: true,
+                        email: true
+                    }
+                }
+            }
+        })
+        const dsProgress = await prisma.progress.findMany({
+            where:{
+                idBaiHoc: idBaiHoc,
+                idKhoaHoc: baiHoc.idKhoaHoc
+            }
+        })
+        const result = dsHocVien.map(dk=>{
+            const progress = dsProgress.find(p=>p.idNguoiDung === dk.idNguoiDung)
+            let trangThai = 'chua_hoc'
+            if(progress){
+                if (progress.trangThai === 'hoan_thanh') {
+                    trangThai = 'hoan_thanh'
+                } else if (progress.trangThai === 'dang_hoc') {
+                    trangThai = 'dang_hoc'
+                } else {
+                    trangThai = 'chua_hoc'
+                }
+            }
+            return{
+                idNguoiDung: dk.nguoidung.idNguoiDung,
+                hoTen: dk.nguoidung.hoTen,
+                taiKhoan: dk.nguoidung.taiKhoan,
+                email: dk.nguoidung.email,
+                thoiGianHoc: progress?.thoiGianHoc || 0,
+                trangThai: trangThai
+            }
+        })
+        const chuaHoc = result.filter(r=>r.trangThai === 'chua_hoc')
+        const dangHoc = result.filter(r=>r.trangThai === 'dang_hoc')
+        const hoanThanh = result.filter(r=>r.trangThai === 'hoan_thanh')
+        const daHoc = [...dangHoc, ...hoanThanh]
+        const tongThoiGian = daHoc.reduce((sum, r) => sum + r.thoiGianHoc, 0)
+        res.status(200).json({
+            success: true,
+            message: "Lấy ds progress thành công",
+            data: {
+                baiHoc: {
+                    idBaiHoc: baiHoc.idBaiHoc,
+                    tenBaiHoc: baiHoc.tenBaiHoc,
+                    videoUrl: baiHoc.videoUrl,
+                    taiLieuUrl: baiHoc.taiLieuUrl
+                },
+                thongKe: {
+                    tongHocVien: dsHocVien.length,
+                    chuaHoc: chuaHoc.length,
+                    dangHoc: dangHoc.length,
+                    hoanThanh: hoanThanh.length,
+                    daHoc: daHoc.length,
+                    tongThoiGianHoc: tongThoiGian,
+                    thoiGianTrungBinh: daHoc.length > 0 ? Math.round(tongThoiGian / daHoc.length) : 0
+                },
+                danhSach: {
+                    chuaHoc: chuaHoc,
+                    dangHoc: dangHoc,
+                    hoanThanh: hoanThanh
+                }
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        })
+    }
+})
+
 export default router;

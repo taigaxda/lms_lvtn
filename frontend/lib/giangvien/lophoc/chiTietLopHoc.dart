@@ -11,6 +11,7 @@ import 'package:frontend/giangvien/baitap/baiTapGVScreen.dart';
 import 'package:frontend/giangvien/thongbao/thongBaoGVScreen.dart';
 import 'package:frontend/comments/commentsScreen.dart';
 import 'package:frontend/groupchat/danhSachGroupScreen.dart';
+import 'thoiGianHocBaiScreen.dart';
 
 class ChiTietLopHocScreen extends StatefulWidget {
   final int idKhoaHoc;
@@ -269,6 +270,7 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     );
   }
 
+  // Trong _buildBodyContent của ChiTietLopHocScreen
   Widget _buildBodyContent() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -314,9 +316,7 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 4),
-
                     Text(
                       "Số bài học: ${baiHocs.length}",
                       style: const TextStyle(color: Colors.white70),
@@ -326,7 +326,6 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
               ],
             ),
           ),
-
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
             child: Text(
@@ -370,18 +369,26 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text("Thứ tự: ${b['thuTu'] ?? index + 1}"),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () {
+                  trailing: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'thoi_gian':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => Thoigianhocbaiscreen(
+                                idKhoaHoc: widget.idKhoaHoc,
+                                idBaiHoc: b['idBaiHoc'],
+                                tenBaiHoc: b['tenBaiHoc'] ?? '',
+                              ),
+                            ),
+                          );
+                          break;
+                        case 'edit':
                           openEditBaiHoc(b);
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.comment, color: Colors.blue),
-                        onPressed: () {
+                          break;
+                        case 'comment':
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -389,15 +396,52 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                                   Commentsscreen(idBaiHoc: b['idBaiHoc']),
                             ),
                           );
-                        },
-                        tooltip: 'Bình luận',
+                          break;
+                        case 'delete':
+                          confirmDelete(b['idBaiHoc']);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'thoi_gian',
+                        child: Row(
+                          children: [
+                            Icon(Icons.timer, color: Colors.purple, size: 20),
+                            SizedBox(width: 12),
+                            Text('Thời gian học'),
+                          ],
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          final id = b['idBaiHoc'];
-                          confirmDelete(id);
-                        },
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, color: Colors.blue, size: 20),
+                            SizedBox(width: 12),
+                            Text('Sửa'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'comment',
+                        child: Row(
+                          children: [
+                            Icon(Icons.comment, color: Colors.blue, size: 20),
+                            SizedBox(width: 12),
+                            Text('Bình luận'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red, size: 20),
+                            SizedBox(width: 12),
+                            Text('Xoá'),
+                          ],
+                        ),
                       ),
                     ],
                   ),

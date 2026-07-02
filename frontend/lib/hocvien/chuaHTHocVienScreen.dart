@@ -190,7 +190,6 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     );
   }
 
-  // ✅ Widget bài tập - giống giao diện bài học (có header khóa học)
   Widget _buildBaiTapItem(Map baiTap, String tenKhoaHoc, int idKhoaHoc) {
     final isQuaHan = baiTap['isQuaHan'] ?? false;
     final conLai = baiTap['conLai'] ?? 0;
@@ -366,7 +365,6 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     );
   }
 
-  // Widget bài học
   Widget _buildBaiHocItem(Map bh, int idKhoaHoc) {
     final progressList = bh['progress'] as List? ?? [];
     final progress = progressList.isNotEmpty ? progressList[0] : null;
@@ -376,26 +374,22 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     Color color;
     String statusText;
     IconData iconData;
-    String statusIcon;
 
     switch (trangThai) {
       case "dang_hoc":
         color = Colors.orange;
         statusText = "Đang học";
         iconData = Icons.play_circle;
-        statusIcon = "⏳";
         break;
       case "hoan_thanh":
         color = Colors.green;
         statusText = "Đã học";
         iconData = Icons.check_circle;
-        statusIcon = "✅";
         break;
       default:
         color = Colors.grey;
         statusText = "Chưa học";
         iconData = Icons.play_circle_outline;
-        statusIcon = "📚";
     }
 
     final isDangHoc = trangThai == 'dang_hoc';
@@ -421,7 +415,7 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '$statusIcon $statusText',
+              '$statusText',
               style: TextStyle(
                 color: color,
                 fontSize: 12,
@@ -522,7 +516,6 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     );
   }
 
-  // Widget quiz
   Widget _buildQuizItem(Map quiz, int idKhoaHoc) {
     return ListTile(
       leading: CircleAvatar(
@@ -542,7 +535,7 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '📝 ${quiz['thoiGianLamBai'] ?? 0} phút',
+              '${quiz['thoiGianLamBai'] ?? 0} phút',
               style: TextStyle(
                 color: Colors.red,
                 fontSize: 12,
@@ -663,7 +656,6 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
           : TabBarView(
               controller: _tabController,
               children: [
-                // Tab 1: Bài học
                 khoaHocs.isEmpty
                     ? _buildEmpty("Không còn bài học nào chưa hoàn thành!")
                     : RefreshIndicator(
@@ -676,7 +668,6 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
                           },
                         ),
                       ),
-                // Tab 2: Bài kiểm tra
                 quizChuaLam.isEmpty
                     ? _buildEmpty("Không còn bài kiểm tra nào chưa làm!")
                     : RefreshIndicator(
@@ -689,7 +680,6 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
                           },
                         ),
                       ),
-                // Tab 3: Bài tập chưa nộp
                 _buildBaiTapList(),
               ],
             ),

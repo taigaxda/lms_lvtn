@@ -116,6 +116,7 @@ model progress {
   khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
 
+  @@unique([idNguoiDung, idBaiHoc])
   @@index([idNguoiDung])
 }
 
