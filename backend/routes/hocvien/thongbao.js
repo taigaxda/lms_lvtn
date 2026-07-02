@@ -3,6 +3,7 @@ import { prisma } from '../../prisma/client.js'
 import { checkHocVien } from '../middleware.js'
 
 const router = express.Router()
+
 router.get('/hethong', checkHocVien, async (req, res) => {
     try {
         const dsThongBaoHeThong = await prisma.announcements.findMany({
