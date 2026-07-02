@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { prisma } from '../../prisma/client.js';
 import { checkGiangVien } from '../middleware.js';
-import { uploadToCloudinary } from './ggHelper.js'; 
+import { uploadToCloudinary } from './ggHelper.js';
+import axios from 'axios';
 
 const router = express.Router();
 
@@ -26,14 +27,79 @@ router.post('/', checkGiangVien, async (req, res) => {
         if (!idKhoaHoc) {
             return res.status(400).json({ success: false, message: "Thiếu ID khóa học!" });
         }
-
+        const idKhoaHocInt = parseInt(idKhoaHoc)
+        const idNguoiDang = req.user.idNguoiDung
         const newBaiHoc = await prisma.baihoc.create({
             data: {
                 idKhoaHoc: parseInt(idKhoaHoc),
                 tenBaiHoc: tenBaiHoc,
                 thuTu: thuTu ? parseInt(thuTu) : 1
             }
-        });
+        })
+
+        try {
+            const tieuDePush = "Bài học mới!"
+            const noiDungPush = `Giảng viên vừa thêm bài học mới: ${tenBaiHoc}`
+            const thongBao = await prisma.announcements.create({
+                data: {
+                    idKhoaHoc: idKhoaHocInt,
+                    idNguoiDang: idNguoiDang,
+                    tieuDe: tieuDePush,
+                    noiDung: noiDungPush,
+                    loaiThongBao: "bai_hoc",
+                    ngayTao: new Date()
+                }
+            })
+            const dsHocVien = await prisma.dangky_khoahoc.findMany({
+                where: {
+                    idKhoaHoc: idKhoaHocInt
+                },
+                include: {
+                    nguoidung: {
+                        include: {
+                            fcm_tokens: true
+                        }
+                    }
+                }
+            })
+            const tokensDich = [];
+            for (let i = 0; i < dsHocVien.length; i++) {
+                const hv = dsHocVien[i].nguoidung;
+                for (let j = 0; j < hv.fcm_tokens.length; j++) {
+                    tokensDich.push(hv.fcm_tokens[j].token);
+                }
+            }
+            if (tokensDich.length > 0) {
+                const oneSignalPayload = {
+                    app_id: process.env.ONESIGNAL_APP_ID,
+                    include_subscription_ids: tokensDich,
+                    target_channel: "push",
+                    headings: {
+                        en: tieuDePush
+                    },
+                    contents: {
+                        en: noiDungPush
+                    },
+                    data: {
+                        idKhoaHoc: idKhoaHocInt,
+                        idThongBao: thongBao.idThongBao,
+                        idBaiHoc: newBaiHoc.idBaiHoc,
+                        loai: "bai_hoc_moi"
+                    }
+                };
+                axios.post('https://api.onesignal.com/notifications', oneSignalPayload, {
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Key ${process.env.ONESIGNAL_REST_API_KEY}`
+                    }
+                }).catch(err => {
+                    console.error("Lỗi gọi API OneSignal khi tạo bài học:", err.response?.data || err.message);
+                });
+            }
+        }
+        catch (pushError) {
+            console.error("Lỗi xử lý lưu bảng tin / bắn thông báo:", pushError.message);
+        }
 
         return res.status(201).json({ success: true, idBaiHoc: newBaiHoc.idBaiHoc });
     } catch (error) {
@@ -47,9 +113,9 @@ router.post('/upload-file/:idBaiHoc', checkGiangVien, upload.single('taiLieu'), 
         const file = req.file;
 
         if (!file) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Chưa chọn file" 
+            return res.status(400).json({
+                success: false,
+                message: "Chưa chọn file"
             });
         }
 
@@ -75,17 +141,17 @@ router.post('/upload-file/:idBaiHoc', checkGiangVien, upload.single('taiLieu'), 
             data: updateData
         });
 
-        return res.json({ 
-            success: true, 
-            message: "Upload file thành công!", 
-            url: secureUrl 
+        return res.json({
+            success: true,
+            message: "Upload file thành công!",
+            url: secureUrl
         });
 
     } catch (error) {
         console.error("Lỗi Upload:", error);
-        return res.status(500).json({ 
-            success: false, 
-            error: error.message 
+        return res.status(500).json({
+            success: false,
+            error: error.message
         });
     }
 });
@@ -124,7 +190,7 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
                 thuTu: 'asc'
             }
         });
-        const kq = baiHocs.map(b=>({
+        const kq = baiHocs.map(b => ({
             ...b, loai: b.videoUrl ? 'video' : b.taiLieuUrl ? 'taiLieu' : 'none'
         }));
 
@@ -138,7 +204,7 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
     }
 });
 
-router.delete('/:idBaiHoc',checkGiangVien,async(req,res)=>{
+router.delete('/:idBaiHoc', checkGiangVien, async (req, res) => {
     try {
         const idBaiHoc = parseInt(req.params.idBaiHoc);
         const idGiangVien = req.user.idNguoiDung;
@@ -149,25 +215,25 @@ router.delete('/:idBaiHoc',checkGiangVien,async(req,res)=>{
             });
         }
         const baiHoc = await prisma.baihoc.findFirst({
-            where:{
+            where: {
                 idBaiHoc: idBaiHoc,
-                khoahoc:{
+                khoahoc: {
                     idGiangVien
                 }
             },
-            include:{
+            include: {
                 khoahoc: true
             }
         });
-        if(!baiHoc){
+        if (!baiHoc) {
             return res.status(403).json({
                 success: false,
                 message: "Bạn không có quyền hoặc bài học không tồn tại"
             });
         }
         await prisma.baihoc.delete({
-            where:{
-                idBaiHoc:idBaiHoc
+            where: {
+                idBaiHoc: idBaiHoc
             }
         })
         return res.json({
@@ -179,11 +245,11 @@ router.delete('/:idBaiHoc',checkGiangVien,async(req,res)=>{
     }
 })
 
-router.put('/:idBaiHoc',checkGiangVien,async(req,res)=>{
-    try{
-        const idBaiHoc =parseInt(req.params.idBaiHoc);
+router.put('/:idBaiHoc', checkGiangVien, async (req, res) => {
+    try {
+        const idBaiHoc = parseInt(req.params.idBaiHoc);
         const idGiangVien = req.user.idNguoiDung;
-        let{tenBaiHoc, thuTu} = req.body;
+        let { tenBaiHoc, thuTu } = req.body;
         if (isNaN(idBaiHoc)) {
             return res.status(400).json({
                 success: false,
@@ -191,28 +257,28 @@ router.put('/:idBaiHoc',checkGiangVien,async(req,res)=>{
             });
         }
         const baiHoc = await prisma.baihoc.findFirst({
-            where:{
+            where: {
                 idBaiHoc: idBaiHoc,
                 khoahoc: {
                     idGiangVien: idGiangVien
                 }
             }
         });
-        if(!baiHoc){
+        if (!baiHoc) {
             return res.status(403).json({
                 success: false,
                 message: "Không có quyền hoặc không tồn tại bài học"
             })
         }
         const updateData = {};
-        if(tenBaiHoc){
+        if (tenBaiHoc) {
             updateData.tenBaiHoc = tenBaiHoc.trim();
         }
-        if(thuTu){
+        if (thuTu) {
             updateData.thuTu = parseInt(thuTu);
         }
         await prisma.baihoc.update({
-            where:{
+            where: {
                 idBaiHoc: idBaiHoc
             },
             data: updateData
@@ -221,7 +287,7 @@ router.put('/:idBaiHoc',checkGiangVien,async(req,res)=>{
             success: true,
             message: "Cập nhật thành công"
         })
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
             success: false,
             error: error.message

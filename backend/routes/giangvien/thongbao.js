@@ -1,7 +1,7 @@
 import express from 'express'
 import { prisma } from '../../prisma/client.js'
 import { checkGiangVien } from '../middleware.js'
-import {sendNotificationToClass} from '../firebase.js'
+import axios from 'axios'
 
 const router = express.Router()
 router.get('/hethong', checkGiangVien, async (req, res) => {
@@ -171,25 +171,52 @@ router.post('/:idKhoaHoc', checkGiangVien, async (req, res) => {
                 }
             }
         })
-        try {
-            const fcmResult = await sendNotificationToClass(
-                idKhoaHoc,
-                `${req.user.hoTen}`,
-                tieuDe,
-                {
-                    type: 'announcement',
-                    khoaHocId: idKhoaHoc.toString(),
-                    thongBaoId: thongBao.idThongBao.toString(),
-                    tieuDe: tieuDe,
-                    noiDung: noiDung,
-                    ngayTao: thongBao.ngayTao.toISOString(),
+        const dsHocVien = await prisma.dangky_khoahoc.findMany({
+            where: {
+                idKhoaHoc: idKhoaHoc
+            },
+            include: {
+                nguoidung: {
+                    include: {
+                        fcm_tokens: true
+                    }
+                }
+            }
+        })
+        const tokensDich = [];
+        for (let i = 0; i < dsHocVien.length; i++) {
+            const hv = dsHocVien[i].nguoidung
+            for (let j = 0; j < hv.fcm_tokens.length; j++) {
+                const token = hv.fcm_tokens[j]
+                tokensDich.push(token.token)
+            }
+        }
+        if (tokensDich.length > 0) {
+            const oneSignalPayload = {
+                app_id: process.env.ONESIGNAL_APP_ID,
+                include_subscription_ids: tokensDich, 
+                target_channel: "push",
+                headings: {
+                    en: tieuDe
                 },
-                req.user.idNguoiDung
-            );
-            
-            console.log('FCM sent:', fcmResult);
-        } catch (fcmError) {
-            console.error('FCM error:', fcmError);
+                contents: {
+                    en: noiDung
+                },
+                data: {
+                    idKhoaHoc: idKhoaHoc,
+                    idThongBao: thongBao.idThongBao,
+                    loai: "thong_bao"
+                }
+            }
+
+            axios.post('https://api.onesignal.com/notifications', oneSignalPayload, {
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Authorization': `Key ${process.env.ONESIGNAL_REST_API_KEY}`
+                }
+            }).catch(err => {
+                console.error("Lỗi bắn thông báo OneSignal:", err.response?.data || err.message);
+            })
         }
         return res.status(201).json({
             success: true,

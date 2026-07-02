@@ -1421,7 +1421,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  // ==================== SEND MESSAGE ====================
   Future<void> _sendMessage({String? text, File? file, PlatformFile? platformFile}) async {
     final messageText = text ?? _messageController.text.trim();
     if (messageText.isEmpty && file == null && platformFile == null) return;
@@ -1478,7 +1477,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
           _pickedFile = null;
         });
 
-        // Gửi qua Socket để realtime (server sẽ broadcast)
+        // Gửi qua Socket để realtime 
         if (_isSocketConnected) {
           // Server sẽ tự động broadcast khi nhận được tin nhắn mới
         }
@@ -1499,7 +1498,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  // ==================== FILE PICKER ====================
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles();
 
@@ -1516,7 +1514,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  // ==================== DELETE MESSAGE ====================
   Future<void> _deleteMessage(int idMessage) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1548,7 +1545,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  // ==================== EDIT MESSAGE ====================
   Future<void> _editMessage(int idMessage, String newText) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1581,7 +1577,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  // ==================== SHOW VIDEO POPUP ====================
   void _showVideoPopup(BuildContext context, String url) {
     showDialog(
       context: context,
@@ -1595,7 +1590,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     );
   }
 
-  // ==================== DELETE DIALOG ====================
   void _showDeleteDialog(int idMessage) {
     showDialog(
       context: context,
@@ -1623,7 +1617,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     );
   }
 
-  // ==================== EDIT DIALOG ====================
   void _showEditDialog(int idMessage, String currentText) {
     final controller = TextEditingController(text: currentText);
 
@@ -1663,7 +1656,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     );
   }
 
-  // ==================== OPEN FILE ====================
   Future<void> _openFile(String url) async {
     if (url.isEmpty) return;
 
@@ -1703,7 +1695,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
 
   Future<void> _fallbackOpen(String url) async {
     final extension = url.split('.').last.toLowerCase();
-
     try {
       if (extension == 'doc' || extension == 'docx') {
         final viewer = "https://docs.google.com/gview?embedded=true&url=$url";
@@ -1719,7 +1710,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  // ==================== TẠO CHỦ ĐỀ TỪ TIN NHẮN ====================
   void _showCreateTopicDialog(Map<String, dynamic> message) {
     final TextEditingController _tieuDeController = TextEditingController(
       text: 'Thảo luận: ${message['noiDung']?.substring(0, message['noiDung']!.length > 50 ? 50 : message['noiDung']!.length)}...',
@@ -1884,7 +1874,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  // ==================== ĐIỀU HƯỚNG ĐẾN DANH SÁCH CHỦ ĐỀ ====================
   void _navigateToTopics() {
     Navigator.push(
       context,
@@ -1896,12 +1885,10 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
       ),
     ).then((result) {
       if (result == true) {
-        // Refresh nếu có thay đổi
       }
     });
   }
 
-  // ==================== BUILD MESSAGE ITEM ====================
   Widget _buildMessageItem(Map<String, dynamic> message) {
     final isMe = message['nguoidung']['idNguoiDung'] == userId;
     final hasFile = message['fileUrl'] != null && message['fileUrl'].isNotEmpty;
@@ -1996,7 +1983,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                         _formatTime(message['thoiGian']),
                         style: const TextStyle(fontSize: 9, color: Colors.grey),
                       ),
-                      // ✅ Menu 3 chấm với tất cả chức năng
                       PopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert, size: 14),
                         onSelected: (value) {
@@ -2012,7 +1998,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                           }
                         },
                         itemBuilder: (context) => [
-                          // ✅ Tạo chủ đề (hiển thị cho tất cả)
                           const PopupMenuItem<String>(
                             value: 'create_topic',
                             child: Row(
@@ -2023,7 +2008,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                               ],
                             ),
                           ),
-                          // ✅ Sửa (chỉ tin nhắn của mình)
                           if (canEdit)
                             const PopupMenuItem<String>(
                               value: 'edit',
@@ -2035,7 +2019,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                                 ],
                               ),
                             ),
-                          // ✅ Xóa (tin nhắn của mình hoặc trưởng nhóm)
                           if (canDelete)
                             const PopupMenuItem<String>(
                               value: 'delete',
@@ -2078,7 +2061,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
-          // ✅ Nút xem danh sách chủ đề
           IconButton(
             icon: const Icon(Icons.forum_outlined),
             onPressed: _navigateToTopics,
@@ -2139,7 +2121,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     );
   }
 
-  // ==================== BUILD FILE PREVIEW ====================
   Widget _buildFilePreview() {
     final fileName = kIsWeb
         ? _pickedFile?.name ?? ''
@@ -2185,7 +2166,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     );
   }
 
-  // ==================== BUILD INPUT BAR ====================
   Widget _buildInputBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -2260,7 +2240,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   }
 }
 
-// ==================== VIDEO PLAYER WIDGET ====================
 class VideoPlayerWidget extends StatefulWidget {
   final String url;
 

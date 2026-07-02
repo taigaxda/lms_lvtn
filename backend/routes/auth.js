@@ -10,6 +10,32 @@ if (!process.env.JWT_SECRET) {
 }
 
 const router = express.Router()
+
+const kiemTraPassword = (password)=>{
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{6,}$/
+    if (!password) {
+        return {
+            isValid: false,
+            message: "Vui lòng nhập mật khẩu"
+        }
+    }
+    if (password.length < 6) {
+        return {
+            isValid: false,
+            message: "Mật khẩu phải có ít nhất 6 ký tự"
+        }
+    }
+    if (!passwordRegex.test(password)) {
+        return {
+            isValid: false,
+            message: "Mật khẩu phải bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt (@$!%*?&.)"
+        }
+    }
+    return {
+        isValid: true,
+        message: "Mật khẩu hợp lệ"
+    }
+}
 router.post("/login", async (req, res) => {
     try {
         let { taiKhoan, matKhau } = req.body
@@ -34,6 +60,12 @@ router.post("/login", async (req, res) => {
                 message: "Tài khoản không tồn tại"
             })
         }
+        if (!nguoiDung.trangThai) {
+            return res.status(403).json({
+                success: false,
+                message: "Tài khoản đã bị khóa"
+            })
+        }
         const matKhauHopLe = await bcrypt.compare(matKhau,nguoiDung.matKhau)
         if (!matKhauHopLe) {
             return res.status(401).json({
@@ -41,12 +73,7 @@ router.post("/login", async (req, res) => {
                 message: "Mật khẩu không chính xác"
             })
         }
-        if (!nguoiDung.trangThai) {
-            return res.status(403).json({
-                success: false,
-                message: "Tài khoản đã bị khóa"
-            })
-        }
+        
         let duongDan = "/"
         switch (nguoiDung.vaiTro) {
             case "admin":
@@ -90,19 +117,26 @@ router.post("/login", async (req, res) => {
 
 router.post("/dangky", async (req, res) => {
     try {
-        let { hoTen, taiKhoan, matKhau, email,vaiTro } = req.body
+        let { hoTen, taiKhoan, matKhau, confirmPassword, email,vaiTro } = req.body
         hoTen = hoTen ? hoTen.trim().replace(/\s+/g, ' ') : undefined
         taiKhoan = taiKhoan ? taiKhoan.trim() : undefined
         matKhau = matKhau ? matKhau.trim() : undefined
+        confirmPassword = confirmPassword ? confirmPassword.trim() : undefined
         email = email ? email.trim() : undefined
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/
 
-        if (!hoTen || !taiKhoan || !matKhau || !email) {
+        if (!hoTen || !taiKhoan || !matKhau || !confirmPassword || !email) {
             return res.status(400).json({
                 success: false,
                 message: "Vui lòng điền đầy đủ thông tin"
+            })
+        }
+        if (matKhau !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Mật khẩu xác nhận không khớp"
             })
         }
 
@@ -118,7 +152,13 @@ router.post("/dangky", async (req, res) => {
                 message: "Họ tên chỉ được chứa chữ cái và khoảng trắng"
             })
         }
-
+        const matKhauManh = kiemTraPassword(matKhau)
+        if (!matKhauManh.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: matKhauManh.message
+            })
+        }
         const existing = await prisma.nguoidung.findUnique({
             where: { taiKhoan }
         })
@@ -175,11 +215,6 @@ router.post("/luu-fcm-token", async(req, res)=>{
                 token: token
             }
         })
-        console.log("✅ [FCM] Lưu token THÀNH CÔNG!");
-        console.log("   📌 TOKEN ĐÃ LƯU:", token);  // Log lại token để copy
-        console.log("   📋 Copy token này để test FCM:");
-        console.log(`   👉 ${token}`);  // Dễ copy
-        console.log("========================================\n");
         res.json({
             success: true,
             message: "Lưu FCMToken thành công"
@@ -216,7 +251,6 @@ router.post('/forgot-password', async (req, res) => {
             });
         }
 
-        // Tìm người dùng theo tài khoản và email
         const user = await prisma.nguoidung.findFirst({
             where: {
                 taiKhoan: taiKhoan.trim(),
@@ -238,20 +272,20 @@ router.post('/forgot-password', async (req, res) => {
             });
         }
 
-        // Tạo OTP 6 số
+        // Tao otp 6 so
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         
         // Lưu OTP với key là email (vẫn dùng email làm key)
         saveOTP(email.trim(), otp);
         
-        // Gửi email
+        // Goi email
         const emailResult = await sendOTPEmail(email.trim(), otp, user.hoTen);
         
         if (!emailResult.success) {
             return res.status(500).json({
                 success: false,
                 message: 'Không thể gửi email, vui lòng thử lại sau'
-            });
+            })
         }
 
         res.status(200).json({
@@ -268,11 +302,11 @@ router.post('/forgot-password', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Không thể xử lý yêu cầu'
-        });
+        })
     }
-});
+})
 
-// Route xác thực OTP - Thêm kiểm tra tài khoản
+// Xac thuc otp
 router.post('/verify-otp', async (req, res) => {
     try {
         const { taiKhoan, otp } = req.body;
@@ -281,26 +315,28 @@ router.post('/verify-otp', async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Vui lòng nhập tài khoản'
-            });
+            })
         }
         
         if (!otp || !otp.trim()) {
             return res.status(400).json({
                 success: false,
                 message: 'Vui lòng nhập mã OTP'
-            });
+            })
         }
 
-        // Tìm user để lấy email
+       
         const user = await prisma.nguoidung.findUnique({
-            where: { taiKhoan: taiKhoan.trim() }
-        });
+            where: { 
+                taiKhoan: taiKhoan.trim() 
+            }
+        })
 
         if (!user) {
             return res.status(404).json({
                 success: false,
                 message: 'Tài khoản không tồn tại'
-            });
+            })
         }
 
         // Kiểm tra OTP với email của user
@@ -322,7 +358,7 @@ router.post('/verify-otp', async (req, res) => {
             },
             process.env.JWT_SECRET,
             { expiresIn: '5m' }
-        );
+        )
 
         res.status(200).json({
             success: true,
@@ -331,17 +367,17 @@ router.post('/verify-otp', async (req, res) => {
                 resetToken: resetToken,
                 expiresIn: '5 phút'
             }
-        });
+        })
     } catch (error) {
         console.error('Lỗi verify-otp:', error);
         res.status(500).json({
             success: false,
             message: 'Không thể xác thực OTP'
-        });
+        })
     }
-});
+})
 
-// Route reset-password - Cập nhật để dùng taiKhoan
+// Rs pass
 router.post('/reset-password', async (req, res) => {
     try {
         const { resetToken, newPassword, confirmPassword } = req.body;
@@ -352,12 +388,13 @@ router.post('/reset-password', async (req, res) => {
                 message: 'Vui lòng điền đầy đủ thông tin'
             });
         }
+        const matKhauManh = kiemTraPassword(newPassword)
 
-        if (newPassword.length < 6) {
+        if (!matKhauManh.isValid) {
             return res.status(400).json({
                 success: false,
-                message: 'Mật khẩu phải có ít nhất 6 ký tự'
-            });
+                message: matKhauManh.message
+            })
         }
 
         if (newPassword !== confirmPassword) {
@@ -542,10 +579,11 @@ router.put('/change-password', checkAuth, async (req, res) => {
             })
         }
 
-        if (newPassword.length < 6) {
+        const matKhauManh = kiemTraPassword(newPassword)
+        if (!matKhauManh.isValid) {
             return res.status(400).json({
                 success: false,
-                message: "Mật khẩu mới phải có ít nhất 6 ký tự"
+                message: matKhauManh.message
             })
         }
 
@@ -578,8 +616,12 @@ router.put('/change-password', checkAuth, async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 10)
 
         await prisma.nguoidung.update({
-            where: { idNguoiDung: idNguoiDung },
-            data: { matKhau: hashedPassword }
+            where: { 
+                idNguoiDung: idNguoiDung 
+            },
+            data: { 
+                matKhau: hashedPassword 
+            }
         })
 
         res.status(200).json({

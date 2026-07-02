@@ -70,11 +70,11 @@ app.use('/topics',topicsRoutes)
 app.use('/', test)
 
 io.on('connection', (socket) => {
-  console.log('🟢 Client connected:', socket.id);
+  console.log('Client connected:', socket.id);
   socket.onAny((event, ...args) => {
-    console.log(`📡 [${event}]`, JSON.stringify(args));
+    console.log(`[${event}]`, JSON.stringify(args));
   });
-  // ✅ Join group - Hỗ trợ cả object và number
+  // Join group - Hỗ trợ cả object và number
   socket.on('join-group', (data) => {
     let groupId;
     
@@ -82,21 +82,20 @@ io.on('connection', (socket) => {
     if (typeof data === 'object' && data !== null) {
       groupId = data.groupId || data.id || data.group;
     } else {
-      // Nếu data là number trực tiếp
       groupId = data;
     }
     
     if (groupId) {
       socket.join(`group_${groupId}`);
-      console.log(`📢 User joined group: ${groupId}`);
+      console.log(`User joined group: ${groupId}`);
       
-      // ✅ Gửi xác nhận đã join group
+      // Gửi xác nhận đã join group
       socket.emit('joined-group', { 
         groupId: groupId, 
         success: true 
       });
     } else {
-      console.log('❌ Invalid groupId:', data);
+      console.log('Invalid groupId:', data);
       socket.emit('join-error', { 
         message: 'Invalid groupId', 
         data: data 
@@ -116,21 +115,21 @@ io.on('connection', (socket) => {
     
     if (groupId) {
       socket.leave(`group_${groupId}`);
-      console.log(`🚪 User left group: ${groupId}`);
+      console.log(`User left group: ${groupId}`);
     }
   });
 
-  // ✅ Gửi tin nhắn - Broadcast đến tất cả trong group
+  // Gửi tin nhắn - Broadcast đến tất cả trong group
   socket.on('send-message', (data) => {
-    console.log(`📤 Message from ${data.userName || 'Unknown'} to group ${data.groupId}: ${data.content || data.message}`);
+    console.log(`Message from ${data.userName || 'Unknown'} to group ${data.groupId}: ${data.content || data.message}`);
     
     const groupId = data.groupId;
     if (!groupId) {
-      console.log('❌ Missing groupId in send-message');
+      console.log('Missing groupId in send-message');
       return;
     }
     
-    // ✅ Broadcast tin nhắn đến tất cả trong group
+    // Broadcast tin nhắn đến tất cả trong group
     io.to(`group_${groupId}`).emit('receive-message', {
       idMessage: data.idMessage || Date.now(),
       content: data.content || data.message || '',
@@ -142,7 +141,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ✅ Edit message
+  // Edit message
   socket.on('edit-message', (data) => {
     const groupId = data.groupId;
     if (!groupId) return;
@@ -154,7 +153,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ✅ Delete message
+  // Delete message
   socket.on('delete-message', (data) => {
     const groupId = data.groupId;
     if (!groupId) return;
@@ -165,7 +164,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ✅ Typing
   socket.on('typing', (data) => {
     const groupId = data.groupId;
     if (!groupId) return;
@@ -187,14 +185,14 @@ io.on('connection', (socket) => {
     
     if (topicId) {
       socket.join(`topic_${topicId}`);
-      console.log(`📢 User joined topic: ${topicId}`);
+      console.log(`User joined topic: ${topicId}`);
       socket.emit('joined-topic', { topicId, success: true });
     } else {
-      console.log('❌ Invalid topicId:', data);
+      console.log('Invalid topicId:', data);
     }
   });
 
-  // ✅ Leave topic
+  // Leave topic
   socket.on('leave-topic', (data) => {
     let topicId;
     if (typeof data === 'object' && data !== null) {
@@ -205,17 +203,17 @@ io.on('connection', (socket) => {
     
     if (topicId) {
       socket.leave(`topic_${topicId}`);
-      console.log(`🚪 User left topic: ${topicId}`);
+      console.log(`User left topic: ${topicId}`);
     }
   });
 
-  // ✅ Gửi tin nhắn trong topic - Broadcast đến tất cả trong topic
+  //Gửi tin nhắn trong topic - Broadcast đến tất cả trong topic
   socket.on('send-topic-message', (data) => {
-    console.log(`📤 Topic message from ${data.userName || 'Unknown'} to topic ${data.topicId}: ${data.content || data.message}`);
+    console.log(`Topic message from ${data.userName || 'Unknown'} to topic ${data.topicId}: ${data.content || data.message}`);
     
     const topicId = data.topicId;
     if (!topicId) {
-      console.log('❌ Missing topicId in send-topic-message');
+      console.log('Missing topicId in send-topic-message');
       return;
     }
     

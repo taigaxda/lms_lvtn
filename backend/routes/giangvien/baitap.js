@@ -5,6 +5,7 @@ import path from 'path';
 import { prisma } from '../../prisma/client.js'
 import { checkGiangVien } from '../middleware.js'
 import { uploadToCloudinary } from './ggHelper.js'; 
+import axios from 'axios';
 
 const router = express.Router();
 
@@ -210,6 +211,74 @@ router.post('/:idKhoaHoc',checkGiangVien,upload.single('fileDinhKem'), async (re
                 hanNop: new Date(hanNop)
             }
         })
+        try{
+            const idNguoiDang = req.user.idNguoiDung;
+            const tieuDePush = "Bài tập mới!";
+            const noiDungPush = `Lớp có bài tập mới: "${tieuDe}". Hạn nộp: ${new Date(hanNop).toLocaleDateString('vi-VN')}`;
+            const thongBao = await prisma.announcements.create({
+                data: {
+                    idKhoaHoc: idKhoaHoc,
+                    idNguoiDang: idNguoiDang,
+                    tieuDe: tieuDePush,
+                    noiDung: noiDungPush,
+                    loaiThongBao: "bai_tap",
+                    ngayTao: new Date()
+                }
+            });
+            const dsHocVien = await prisma.dangky_khoahoc.findMany({
+                where: {
+                    idKhoaHoc: idKhoaHoc
+                },
+                include: {
+                    nguoidung: {
+                        include: {
+                            fcm_tokens: true
+                        }
+                    }
+                }
+            })
+            const tokensDich = []
+            for (let i = 0; i < dsHocVien.length; i++) {
+                const hv = dsHocVien[i].nguoidung
+                if (hv && Array.isArray(hv.fcm_tokens)) {
+                    for (let j = 0; j < hv.fcm_tokens.length; j++) {
+                        if (hv.fcm_tokens[j]?.token) {
+                            tokensDich.push(hv.fcm_tokens[j].token)
+                        }
+                    }
+                }
+            }
+            if(tokensDich.length > 0){
+                const oneSignalPayload ={
+                    app_id: process.env.ONESIGNAL_APP_ID,
+                    include_subscription_ids: tokensDich,
+                    target_channel: "push",
+                    headings: {
+                        en: tieuDePush
+                    },
+                    contents: {
+                        en: noiDungPush
+                    },
+                    data: {
+                        idKhoaHoc: idKhoaHoc,
+                        idThongBao: thongBao.idThongBao,
+                        idAssignment: baiTap.idAssignment,
+                        loai: "bai_tap_moi"
+                    }
+                }
+                axios.post('https://api.onesignal.com/notifications', oneSignalPayload, {
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Key ${process.env.ONESIGNAL_REST_API_KEY}`
+                    }
+                }).catch(err => {
+                    console.error("Lỗi gọi API OneSignal khi tạo bài tập:", err.response?.data || err.message);
+                })
+            }
+        }
+        catch(pushError){
+            console.error("Lỗi xử lý lưu bảng tin / bắn thông báo:", pushError.message);
+        }
         return res.status(200).json({
             success: true,
             message: "Tạo bài tập thành công",

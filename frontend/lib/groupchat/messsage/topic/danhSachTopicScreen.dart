@@ -158,7 +158,7 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('🔒 Đã đóng chủ đề'),
+            content: Text('Đã đóng chủ đề'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -202,7 +202,6 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
     );
   }
 
-  // ==================== XÁC NHẬN MỞ LẠI CHỦ ĐỀ ====================
   void _confirmReopenTopic(int topicId, String tieuDe) {
     showDialog(
       context: context,
@@ -232,7 +231,6 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
     );
   }
 
-  // ==================== MỞ LẠI CHỦ ĐỀ ====================
   Future<void> _reopenTopic(int topicId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -277,8 +275,6 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
 
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
-
-      // Tạm thời dùng idMessageGoc = null (tạo chủ đề không từ tin nhắn)
       final response = await http.post(
         Uri.parse('$apiUrl/create-from-message/${widget.idGroup}'),
         headers: {
@@ -343,8 +339,6 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
     final tinNhanMoiNhat = topic['tinNhanMoiNhat'];
     final daXem = topic['daXem'] ?? false;
     final isClosed = trangThai == 'closed';
-
-    //Lấy ID người dùng hiện tại
     final currentUserId = _getCurrentUserId();
     final isCreator = currentUserId == nguoiTao?['idNguoiDung'];
 
@@ -419,7 +413,7 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '📎 Tin nhắn gốc:',
+                      'Tin nhắn gốc:',
                       style: TextStyle(
                         fontSize: 10,
                         color: Colors.grey.shade500,
@@ -449,7 +443,6 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
-            // Menu 3 chấm - chỉ chủ topic
             if (isCreator)
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.grey),

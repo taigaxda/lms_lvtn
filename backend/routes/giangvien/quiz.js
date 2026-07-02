@@ -1,6 +1,7 @@
 import express from 'express'
 import { prisma } from '../../prisma/client.js'
 import { checkGiangVien } from '../middleware.js'
+import axios from 'axios'
 
 const router = express.Router()
 
@@ -140,7 +141,6 @@ router.get('/diemhv/:idQuiz', checkGiangVien, async (req, res) => {
             error: err.message
         });
     }
-
 })
 router.post('/', checkGiangVien, async (req, res) => {
     try {
@@ -203,6 +203,74 @@ router.post('/', checkGiangVien, async (req, res) => {
                 idKhoaHoc
             }
         });
+        const idKhoaHocInt = parseInt(idKhoaHoc);
+        try{
+            const tieuDePush = "Bài kiểm tra mới!";
+            const hanNopText = parsedNgayDenHan ? ` Hạn chót: ${new Date(parsedNgayDenHan).toLocaleDateString('vi-VN')}` : '';
+            const noiDungPush = `Lớp có bài trắc nghiệm mới: "${tenQuiz}".${hanNopText}`;
+            const thongBao = await prisma.announcements.create({
+                data:{
+                    idKhoaHoc: idKhoaHocInt,
+                    idNguoiDang: idGiangVien,
+                    tieuDe: tieuDePush,
+                    noiDung: noiDungPush,
+                    loaiThongBao: 'quiz',
+                    ngayTao: new Date()
+                }
+            })
+            const dsHocVien = await prisma.dangky_khoahoc.findMany({
+                where:{
+                    idKhoaHoc: idKhoaHocInt
+                },
+                include: {
+                    nguoidung: {
+                        include: {
+                            fcm_tokens: true
+                        }
+                    }
+                }
+            })
+            const tokensDich = []
+            for (let i = 0; i < dsHocVien.length; i++) {
+                const hv = dsHocVien[i].nguoidung
+                if (hv && Array.isArray(hv.fcm_tokens)) {
+                    for (let j = 0; j < hv.fcm_tokens.length; j++) {
+                        if (hv.fcm_tokens[j]?.token) {
+                            tokensDich.push(hv.fcm_tokens[j].token)
+                        }
+                    }
+                }
+            }
+            if(tokensDich.length > 0){
+                const oneSignalPayload = {
+                    app_id: process.env.ONESIGNAL_APP_ID,
+                    include_subscription_ids: tokensDich,
+                    target_channel: "push",
+                    headings: {
+                        en: tieuDePush
+                    },
+                    contents: {
+                        en: noiDungPush
+                    },
+                    data: {
+                        idKhoaHoc: idKhoaHocInt,
+                        idThongBao: thongBao.idThongBao,
+                        idQuiz: quiz.idQuiz,
+                        loai: "quiz_moi"
+                    }
+                }
+                axios.post('https://api.onesignal.com/notifications', oneSignalPayload, {
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Authorization': `Key ${process.env.ONESIGNAL_REST_API_KEY}`
+                    }
+                }).catch(err => {
+                    console.error("Lỗi gọi API OneSignal khi tạo Quiz:", err.response?.data || err.message)
+                })
+            }
+        }catch(pushError){
+            console.error("Lỗi xử lý lưu bảng tin / bắn thông báo Quiz ngầm:", pushError.message);
+        }
         res.json({
             success: true,
             data: quiz

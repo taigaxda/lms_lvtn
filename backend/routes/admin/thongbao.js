@@ -1,6 +1,7 @@
 import express from 'express'
 import { prisma } from '../../prisma/client.js'
 import { checkAdmin } from '../middleware.js'
+import axios from 'axios'
 
 const router = express.Router()
 router.get('/hethong', checkAdmin, async (req, res) => {
@@ -178,6 +179,75 @@ router.post('/', checkAdmin, async (req, res) => {
                 }
             }
         })
+        const tokensDich = []
+        if(whereCondition.idKhoaHoc !== null){
+            const dsHocVien = await prisma.dangky_khoahoc.findMany({
+                where:{
+                    idKhoaHoc: whereCondition.idKhoaHoc
+                },
+                include:{
+                    nguoidung:{
+                        include:{
+                            fcm_tokens:true
+                        }
+                    }
+                }
+            })
+            for(let i=0;i<dsHocVien.length;i++){
+                const hv = dsHocVien[i].nguoidung
+                for(let j = 0 ;j<hv.fcm_tokens.length;j++){
+                    tokensDich.push(hv.fcm_tokens[j].token)
+                }
+            }
+            const thongTinLop = await prisma.khoaHoc.findUnique({
+                where:{
+                    idKhoaHoc: whereCondition.idKhoaHoc
+                },
+                select:{
+                    idGiangVien: true
+                }
+            })
+            if(thongTinLop && thongTinLop.idGiangVien){
+                const tokenGV = await prisma.fcm_tokens.findMany({
+                    idNguoiDang: thongTinLop.idGiangVien
+                })
+                for (let k=0;k<tokenGV.length;k++){
+                    tokensDich.push(tokenGV[k].token)
+                }
+            }
+        }
+        else{
+            const dsNguoiDung = await prisma.fcm_tokens.findMany()
+            for(let i=0;i<dsNguoiDung.length;i++){
+                tokensDich.push(dsNguoiDung[i].token)
+            }
+        }
+        if(tokensDich.length>0){
+            const oneSignalPayLoad = {
+                app_id: process.env.ONESIGNAL_APP_ID,
+                include_subscription_ids: tokensDich, 
+                target_channel: "push",
+                headings: {
+                    en: tieuDe
+                },
+                contents: {
+                    en: noiDung
+                },
+                data: {
+                    idKhoaHoc: whereCondition.idKhoaHoc, 
+                    idThongBao: thongBao.idThongBao,
+                    loai: "thong_bao"
+                }
+            }
+            axios.post('https://api.onesignal.com/notifications', oneSignalPayLoad, {
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Authorization': `Key ${process.env.ONESIGNAL_REST_API_KEY}`
+                }
+            }).catch(err => {
+                console.error("Lỗi bắn thông báo OneSignal từ Admin:", err.response?.data || err.message);
+            })
+        }
         const kieuTB = thongBao.idKhoaHoc === null ? "hệ thống" : "lớp học"
         return res.status(201).json({
             success: true,

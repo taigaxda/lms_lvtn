@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/authentication/dangKyScreen.dart';
 import 'package:frontend/api.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'forgotPasswordScreen.dart';
 
 class Loginscreen extends StatefulWidget {
@@ -32,31 +32,37 @@ class _LoginscreenState extends State<Loginscreen> {
 
   Future<void> guiFCMToken(int idNguoiDung) async{
     try{
-      final fcmToken = await FirebaseMessaging.instance.getToken();
-      if(fcmToken == null){
+      String? oneSignalSubId = OneSignal.User.pushSubscription.id;
+      if (oneSignalSubId == null || oneSignalSubId.isEmpty) {
+        print("Chưa lấy được Token từ OneSignal. Đang đợi subscription đổi trạng thái...");
         return;
       }
-      await http.post(Uri.parse("${ApiConfig.baseUrl}/auth/luu-fcm-token"),
+      print("Lấy được OneSignal Subscription ID: $oneSignalSubId");
+      final response = await http.post(Uri.parse("${ApiConfig.baseUrl}/auth/luu-fcm-token"),
         headers: {"Content-Type": "application/json"},
         body:jsonEncode({
           "idNguoiDung": idNguoiDung,
-          "token": fcmToken
+          "token": oneSignalSubId
         }),
       );
-      print("Đã gửi FCM token $fcmToken");
+      if (response.statusCode == 200) {
+        print("Đã đồng bộ và lưu FCM token lên hệ thống Backend thành công!");
+      } else {
+        print("Backend từ chối lưu Token: ${response.body}");
+      }
     }
     catch(e){
       print("Lỗi gửi FCM token: $e");
     }
   }
-   void _setupFCMListeners() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Nhận thông báo khi app đang mở: ${message.notification?.title}');
+   void _setupOneSignalListeners() {
+   OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+      print('Nhận thông báo khi app đang mở: ${event.notification.title}');
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            message.notification?.title ?? 'Thông báo mới',
+            event.notification.title ?? 'Thông báo mới',
             style: const TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.blue,
@@ -98,7 +104,7 @@ class _LoginscreenState extends State<Loginscreen> {
         await prefs.setString("hoTen", user["hoTen"]);
         await prefs.setString("vaiTro", user["vaiTro"]);
         await guiFCMToken(user["id"]);
-        _setupFCMListeners();
+        _setupOneSignalListeners();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Chào ${user["hoTen"]} 👋")),
