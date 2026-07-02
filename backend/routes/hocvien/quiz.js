@@ -138,7 +138,7 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
                     q.answers.map(a => ({
                         idDapAn: a.idDapAn,
                         noiDung: a.noiDung
-                })))
+                    })))
             }))
         );
         res.json({
@@ -159,7 +159,7 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
 router.get('/chualam', checkHocVien, async (req, res) => {
     try {
         const idNguoiDung = req.user.idNguoiDung;
-        
+
         const data = await prisma.khoahoc.findMany({
             where: {
                 dangky_khoahoc: {
@@ -168,8 +168,8 @@ router.get('/chualam', checkHocVien, async (req, res) => {
                 quizzes: {
                     some: {
                         results: {
-                            none: { 
-                                idNguoiDung: idNguoiDung 
+                            none: {
+                                idNguoiDung: idNguoiDung
                             }
                         }
                     }
@@ -181,8 +181,8 @@ router.get('/chualam', checkHocVien, async (req, res) => {
                 quizzes: {
                     where: {
                         results: {
-                            none: { 
-                                idNguoiDung: idNguoiDung 
+                            none: {
+                                idNguoiDung: idNguoiDung
                             }
                         }
                     },
@@ -199,28 +199,147 @@ router.get('/chualam', checkHocVien, async (req, res) => {
             }
         });
         const filteredData = data.filter(khoaHoc => khoaHoc.quizzes.length > 0);
-        
+
         res.json({
             success: true,
             data: filteredData,
             total: filteredData.length
         });
-        
+
     } catch (error) {
         console.error("Lỗi lấy quiz chưa làm:", error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            error: error.message
         });
     }
 });
 
+// router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
+//     try {
+//         const idNguoiDung = req.user.idNguoiDung
+//         const idQuiz = parseInt(req.params.idQuiz)
+//         const { answers } = req.body
+//         if (isNaN(idQuiz)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "ID bài kiểm tra không hợp lệ"
+//             });
+//         }
+//         if (!Array.isArray(answers)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Format answers phải là array"
+//             });
+//         }
+//         const quiz = await prisma.quizzes.findUnique({
+//             where: { idQuiz },
+//             include: {
+//                 khoahoc: true,
+//                 questions:{
+//                     include:{
+//                         answers: true
+//                     }
+//                 }
+//             }
+//         });
+//         if (!quiz) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Bài kiểm tra không tồn tại"
+//             });
+//         }
+//         const dangKy = await prisma.dangky_khoahoc.findFirst({
+//             where: {
+//                 idNguoiDung,
+//                 idKhoaHoc: quiz.idKhoaHoc
+//             }
+//         });
+
+//         if (!dangKy) {
+//             return res.status(403).json({
+//                 success: false,
+//                 message: "Bạn chưa đăng ký khóa học"
+//             });
+//         }
+//         const daLam = await prisma.quiz_results.findFirst({
+//             where: {
+//                 idNguoiDung,
+//                 idQuiz
+//             }
+//         });
+//         if (daLam) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Bạn đã làm bài kiểm tra này rồi"
+//             });
+//         }
+//         if (quiz.ngayDenHan && new Date() > new Date(quiz.ngayDenHan)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Đã quá hạn nộp bài"
+//             });
+//         }
+//         const questionsIds = quiz.questions.map(q=>q.idCauHoi)
+//         const answeredIds = answers.map(a=>a.idCauHoi);
+//         const missing = questionsIds.filter(id=>!answeredIds.includes(id));
+//         if(missing.length>0){
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Bạn chưa trả lời hết tất cả câu hỏi",
+//                 issingQuestions: missing
+//             })
+//         }
+//         const uniqueAnswered = new Set(answeredIds);
+//         if (uniqueAnswered.size !== answeredIds.length) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Có câu trả lời bị trùng"
+//             });
+//         }
+//         const answerMap = {};
+//         for (const a of answers){
+//             answerMap[a.idCauHoi]=a.idDapAn
+//         }
+//         let tongDiem = 0;
+//         for (const q of quiz.questions) {
+//             const userAnswerId = answerMap[q.idCauHoi];
+//             if(!userAnswerId)
+//                 continue;
+//             const dapAnDung = q.answers.find(a=>a.laDung === true);
+//             if(dapAnDung&&dapAnDung.idDapAn===userAnswerId){
+//                 tongDiem+=Number(q.diemCauHoi);
+//             }
+//         }
+
+//         const ketqua = await prisma.quiz_results.create({
+//             data: {
+//                 idNguoiDung,
+//                 idQuiz,
+//                 diemSo: tongDiem,
+//                 thoiGianLamBai: quiz.thoiGianLamBai
+//             }
+//         })
+//         res.json({
+//             success: true,
+//             message: "Nộp bài thành công",
+//             data: {
+//                 diem: ketqua.diemSo,
+//                 idKetQua: ketqua.idKetQua
+//             }
+//         });
+//     }
+//     catch (error) {
+//         res.status(500).json({ error: error.message })
+//     }
+// })
 
 router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
     try {
         const idNguoiDung = req.user.idNguoiDung
         const idQuiz = parseInt(req.params.idQuiz)
-        const { answers } = req.body
+        const { answers, thoiGianLamBai, gianLan } = req.body
+        
         if (isNaN(idQuiz)) {
             return res.status(400).json({
                 success: false,
@@ -233,23 +352,26 @@ router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
                 message: "Format answers phải là array"
             });
         }
+        
         const quiz = await prisma.quizzes.findUnique({
             where: { idQuiz },
             include: {
                 khoahoc: true,
-                questions:{
-                    include:{
+                questions: {
+                    include: {
                         answers: true
                     }
                 }
             }
         });
+        
         if (!quiz) {
             return res.status(404).json({
                 success: false,
                 message: "Bài kiểm tra không tồn tại"
             });
         }
+        
         const dangKy = await prisma.dangky_khoahoc.findFirst({
             where: {
                 idNguoiDung,
@@ -263,75 +385,93 @@ router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
                 message: "Bạn chưa đăng ký khóa học"
             });
         }
+        
         const daLam = await prisma.quiz_results.findFirst({
             where: {
                 idNguoiDung,
                 idQuiz
             }
         });
+        
         if (daLam) {
             return res.status(400).json({
                 success: false,
                 message: "Bạn đã làm bài kiểm tra này rồi"
             });
         }
+        
         if (quiz.ngayDenHan && new Date() > new Date(quiz.ngayDenHan)) {
             return res.status(400).json({
                 success: false,
                 message: "Đã quá hạn nộp bài"
             });
         }
-        const questionsIds = quiz.questions.map(q=>q.idCauHoi)
-        const answeredIds = answers.map(a=>a.idCauHoi);
-        const missing = questionsIds.filter(id=>!answeredIds.includes(id));
-        if(missing.length>0){
-            return res.status(400).json({
-                success: false,
-                message: "Bạn chưa trả lời hết tất cả câu hỏi",
-                issingQuestions: missing
-            })
-        }
-        const uniqueAnswered = new Set(answeredIds);
-        if (uniqueAnswered.size !== answeredIds.length) {
-            return res.status(400).json({
-                success: false,
-                message: "Có câu trả lời bị trùng"
-            });
-        }
-        const answerMap = {};
-        for (const a of answers){
-            answerMap[a.idCauHoi]=a.idDapAn
-        }
+
         let tongDiem = 0;
-        for (const q of quiz.questions) {
-            const userAnswerId = answerMap[q.idCauHoi];
-            if(!userAnswerId)
-                continue;
-            const dapAnDung = q.answers.find(a=>a.laDung === true);
-            if(dapAnDung&&dapAnDung.idDapAn===userAnswerId){
-                tongDiem+=Number(q.diemCauHoi);
+        let answerMap = {};
+
+        if (!gianLan) {
+            const questionsIds = quiz.questions.map(q => q.idCauHoi);
+            const answeredIds = answers.map(a => a.idCauHoi);
+            const missing = questionsIds.filter(id => !answeredIds.includes(id));
+            
+            if (missing.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Bạn chưa trả lời hết tất cả câu hỏi",
+                    missingQuestions: missing
+                });
+            }
+            
+            const uniqueAnswered = new Set(answeredIds);
+            if (uniqueAnswered.size !== answeredIds.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Có câu trả lời bị trùng"
+                });
+            }
+            
+            for (const a of answers) {
+                answerMap[a.idCauHoi] = a.idDapAn;
+            }
+            
+            for (const q of quiz.questions) {
+                const userAnswerId = answerMap[q.idCauHoi];
+                if (!userAnswerId) continue;
+                const dapAnDung = q.answers.find(a => a.laDung === true);
+                if (dapAnDung && dapAnDung.idDapAn === userAnswerId) {
+                    tongDiem += Number(q.diemCauHoi);
+                }
             }
         }
+        const thoiGianThucTe = thoiGianLamBai || quiz.thoiGianLamBai || 0;
 
         const ketqua = await prisma.quiz_results.create({
             data: {
                 idNguoiDung,
                 idQuiz,
                 diemSo: tongDiem,
-                thoiGianLamBai: quiz.thoiGianLamBai
+                thoiGianLamBai: thoiGianThucTe
             }
         })
+        
         res.json({
             success: true,
-            message: "Nộp bài thành công",
+            message: gianLan ? "Bài làm bị hủy do gian lận" : "Nộp bài thành công",
             data: {
                 diem: ketqua.diemSo,
-                idKetQua: ketqua.idKetQua
+                idKetQua: ketqua.idKetQua,
+                thoiGianLamBai: ketqua.thoiGianLamBai,
+                gianLan: gianLan || false
             }
-        });
+        })
     }
     catch (error) {
-        res.status(500).json({ error: error.message })
+        console.error("Lỗi nộp bài:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        })
     }
 })
 export default router
