@@ -30,10 +30,23 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
     super.initState();
     if (widget.quiz != null) {
       tenQuizController.text = widget.quiz!["tenQuiz"] ?? "";
-      thoiGianController.text = (widget.quiz!["thoiGianLamBai"] ?? "")
-          .toString();
-      if (widget.quiz!["ngayDenHan"] != null) {
-        ngayDenHanController.text = widget.quiz!["ngayDenHan"].toString();
+      // if (widget.quiz!["thoiGianLamBai"] != null) {
+      //   thoiGianController.text = widget.quiz!["thoiGianLamBai"].toString();
+      // }
+      // if (widget.quiz!["ngayDenHan"] != null) {
+      //   ngayDenHanController.text = widget.quiz!["ngayDenHan"].toString();
+      // }
+      final thoiGian = widget.quiz!["thoiGianLamBai"];
+      if (thoiGian != null) {
+        thoiGianController.text = thoiGian.toString();
+      } else {
+        thoiGianController.clear();
+      }
+      final ngayDenHan = widget.quiz!["ngayDenHan"];
+      if (ngayDenHan != null) {
+        ngayDenHanController.text = ngayDenHan.toString();
+      } else {
+        ngayDenHanController.clear();
       }
     }
   }
@@ -44,9 +57,13 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString("token");
+      final thoiGianText = thoiGianController.text.trim();
+      final thoiGianLamBai = thoiGianText.isEmpty
+          ? null
+          : int.parse(thoiGianText);
       final body = {
         "tenQuiz": tenQuizController.text.trim(),
-        "thoiGianLamBai": int.parse(thoiGianController.text.trim()),
+        "thoiGianLamBai": thoiGianLamBai,
         "ngayDenHan": ngayDenHanController.text.trim().isEmpty
             ? null
             : ngayDenHanController.text.trim(),
@@ -101,45 +118,45 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
   }
 
   Future<void> pickDateTime() async {
-  final now = DateTime.now();
+    final now = DateTime.now();
 
-  final pickedDate = await showDatePicker(
-    context: context,
-    initialDate: now,
-    firstDate: now,
-    lastDate: DateTime(2100),
-  );
-
-  if (pickedDate == null) return;
-
-  final pickedTime = await showTimePicker(
-    context: context,
-    initialTime: TimeOfDay.fromDateTime(now),
-  );
-
-  if (pickedTime == null) return;
-
-  final selectedDateTime = DateTime(
-    pickedDate.year,
-    pickedDate.month,
-    pickedDate.day,
-    pickedTime.hour,
-    pickedTime.minute,
-  );
-
-  if (selectedDateTime.isBefore(now)) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Không được chọn thời gian trong quá khứ"),
-      ),
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: DateTime(2100),
     );
-    return;
-  }
 
-  setState(() {
-    ngayDenHanController.text = selectedDateTime.toIso8601String();
-  });
-}
+    if (pickedDate == null) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(now),
+    );
+
+    if (pickedTime == null) return;
+
+    final selectedDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    if (selectedDateTime.isBefore(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Không được chọn thời gian trong quá khứ"),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      ngayDenHanController.text = selectedDateTime.toIso8601String();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +196,7 @@ class _AddBaiKiemTraGVScreenState extends State<AddBaiKiemTraGVScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return "Không được để trống";
+                    return null;
                   }
                   if (int.tryParse(value) == null) {
                     return "Phải là số";

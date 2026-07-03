@@ -106,7 +106,7 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), 
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.blue,
@@ -248,7 +248,6 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
                                           color: Colors.grey,
                                         ),
                                         Text("${quiz["thoiGianLamBai"] ?? 0}m"),
-
                                         const Icon(
                                           Icons.help_outline,
                                           size: 14,
@@ -257,6 +256,30 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
                                         Text(
                                           "${quiz["questions"]?.length ?? 0} câu",
                                         ),
+                                        if (quiz["ngayDenHan"] != null) ...[
+                                          const Icon(
+                                            Icons.calendar_today,
+                                            size: 14,
+                                            color: Colors.grey,
+                                          ),
+                                          Text(
+                                            _formatDate(quiz["ngayDenHan"]),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ] else ...[
+                                          const Text(
+                                            "Không giới hạn",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
 
                                         const Text(
                                           "Nhấn xem chi tiết",
@@ -323,5 +346,14 @@ class _BaikiemtragvscreenState extends State<Baikiemtragvscreen> {
               ),
       ),
     );
+  }
+  String _formatDate(String? dateTimeString) {
+    if (dateTimeString == null) return '';
+    try {
+      final dateTime = DateTime.parse(dateTimeString);
+      return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateTimeString;
+    }
   }
 }
