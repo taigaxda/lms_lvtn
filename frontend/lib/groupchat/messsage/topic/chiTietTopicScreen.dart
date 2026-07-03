@@ -1,4 +1,3 @@
-// topic/chiTietTopicScreen.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -28,8 +27,7 @@ class ChiTietTopicScreen extends StatefulWidget {
   State<ChiTietTopicScreen> createState() => _ChiTietTopicScreenState();
 }
 
-class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
-    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String apiUrl = '${ApiConfig.baseUrl}/topics';
@@ -100,10 +98,10 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
   Future<void> _connectSocket() async {
     if (userId == 0) return;
 
-    print('🔍 [UI] Connecting socket for topic...');
+    print('[UI] Connecting socket for topic...');
 
     if (!SocketService.isConnected()) {
-      print('🔍 [UI] Socket not connected, calling connect()...');
+      print('[UI] Socket not connected, calling connect()...');
       SocketService.connect();
     }
 
@@ -117,7 +115,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
     while (attempts < maxAttempts) {
       if (SocketService.isConnected()) {
         _isSocketConnected = true;
-        print('✅ Socket connected, joining topic ${widget.topicId}...');
+        print('Socket connected, joining topic ${widget.topicId}...');
 
         SocketService.joinTopic(widget.topicId);
 
@@ -136,11 +134,11 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
       }
 
       attempts++;
-      print('⏳ Waiting for socket... ($attempts/$maxAttempts)');
+      print('Waiting for socket... ($attempts/$maxAttempts)');
       await Future.delayed(const Duration(milliseconds: 500));
     }
 
-    print('❌ Cannot connect to socket after $maxAttempts attempts');
+    print('Cannot connect to socket after $maxAttempts attempts');
     setState(() {
       _isSocketConnected = false;
     });
@@ -148,7 +146,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
 
   void _checkAndReconnectSocket() {
     if (!_isSocketConnected && userId != 0) {
-      print('🔄 Reconnecting socket...');
+      print('Reconnecting socket...');
       _connectSocket();
     }
   }
@@ -166,11 +164,10 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
   void _onReceiveMessage(Map<String, dynamic> data) {
     if (!mounted) return;
 
-    // ✅ Lấy dữ liệu từ 'message' nếu có
     final messageData = data['message'] ?? data;
 
     print(
-      '📩 Received topic message: ${messageData['noiDung'] ?? messageData['content']}',
+      'Received topic message: ${messageData['noiDung'] ?? messageData['content']}',
     );
 
     final exists = messages.any((m) => m['id'] == messageData['id']);
@@ -208,7 +205,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
 
   void _onMessageEdited(Map<String, dynamic> data) {
     if (!mounted) return;
-    print('📝 Topic message edited: ${data['idMessage']}');
+    print('Topic message edited: ${data['idMessage']}');
 
     setState(() {
       final index = messages.indexWhere((m) => m['id'] == data['idMessage']);
@@ -220,7 +217,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
 
   void _onMessageDeleted(Map<String, dynamic> data) {
     if (!mounted) return;
-    print('🗑️ Topic message deleted: ${data['idMessage']}');
+    print('Topic message deleted: ${data['idMessage']}');
 
     setState(() {
       messages.removeWhere((m) => m['id'] == data['idMessage']);
@@ -248,12 +245,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final topic = data['data'];
-      
-      // ✅ In từ biến topic (đã có dữ liệu)
-      print('📌 topic: $topic');
-      print('📌 group: ${topic['group']}');
-      print('📌 members: ${topic['group']?['members']}');
-      
       setState(() {
         topicDetail = topic;
         messages = List<Map<String, dynamic>>.from(topic['messages'] ?? []);
@@ -288,11 +279,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
   }
 
   // ==================== SEND MESSAGE ====================
-  Future<void> _sendMessage({
-    String? text,
-    File? file,
-    PlatformFile? platformFile,
-  }) async {
+  Future<void> _sendMessage({String? text,File? file, PlatformFile? platformFile,}) async {
     final messageText = text ?? _messageController.text.trim();
     if (messageText.isEmpty && file == null && platformFile == null) return;
 
@@ -347,8 +334,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
           _selectedFile = null;
           _pickedFile = null;
         });
-
-        // Socket sẽ broadcast tin nhắn mới
       } else {
         final responseData = await response.stream.bytesToString();
         final data = jsonDecode(responseData);
@@ -591,11 +576,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
     final hasText = message['noiDung'] != null && message['noiDung'].isNotEmpty;
     final isGiangVienMessage = message['nguoidung']['vaiTro'] == 'giangvien';
     final isLeader = _isTruongNhom();
-    //Được xóa nếu là tin nhắn của mình (isMe) HOẶC là trưởng nhóm (_isTruongNhom)
-    //KHÔNG được xóa nếu là tin nhắn của Giảng viên (trừ khi chính GV đó)
     final canDelete = isMe || (isLeader && !isGiangVienMessage);
-
-    //Chỉ được sửa tin nhắn của mình
     final canEdit = isMe;
 
     return RepaintBoundary(
@@ -685,7 +666,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
                         _formatTime(message['ngayTao']),
                         style: const TextStyle(fontSize: 9, color: Colors.grey),
                       ),
-                      // ✅ Menu 3 chấm (chỉ hiển thị khi có quyền sửa hoặc xóa)
                       if (canDelete || canEdit)
                         PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert, size: 14),
@@ -715,7 +695,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
                                   ],
                                 ),
                               ),
-                            // ✅ Luôn hiển thị "Xóa" nếu có quyền
                             if (canDelete)
                               const PopupMenuItem<String>(
                                 value: 'delete',
@@ -745,42 +724,26 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
   }
 
   bool _isTruongNhom() {
-    print('🔍 Checking group leader for user: $userId');
-
     if (topicDetail == null) {
-      print('❌ topicDetail is null');
       return false;
     }
-
-    print('🔍 topicDetail keys: ${topicDetail!.keys}');
-
     if (topicDetail!['group'] == null) {
-      print('❌ group is null in topicDetail');
       return false;
     }
-
     final group = topicDetail!['group'];
-    print('🔍 group keys: ${group.keys}');
-
     if (group['members'] == null) {
-      print('❌ members is null in group');
       return false;
     }
-
     final members = group['members'] as List;
-    print('🔍 members count: ${members.length}');
-
     for (var member in members) {
-      final memberId =
-          member['idNguoiDung'] ?? member['nguoidung']?['idNguoiDung'];
-      print('🔍 memberId: $memberId, userId: $userId');
+      final memberId = member['idNguoiDung'] ?? member['nguoidung']?['idNguoiDung'];
+      print('memberId: $memberId, userId: $userId');
       if (memberId == userId) {
-        print('✅ User $userId is group leader');
+        print('User $userId is group leader');
         return true;
       }
     }
-
-    print('❌ User $userId is NOT group leader');
+    print('User $userId is NOT group leader');
     return false;
   }
 
