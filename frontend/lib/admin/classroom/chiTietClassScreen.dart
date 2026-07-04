@@ -18,6 +18,12 @@ class _ChitietclassscreenState extends State<Chitietclassscreen> {
   Map<String, dynamic>? lopHoc;
   bool isLoading = true;
 
+  @override
+  void initState() {
+    super.initState();
+    fetchChiTiet();
+  }
+
   Future<void> fetchChiTiet() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -44,10 +50,65 @@ class _ChitietclassscreenState extends State<Chitietclassscreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    fetchChiTiet();
+  Future<void> kickHocVien(int idNguoiDung, String hoTen) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Xác nhận xóa"),
+        content: Text("Bạn có chắc chắn muốn xóa học viên này khỏi lớp học?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Hủy"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Xóa"),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+
+      final response = await http.delete(
+        Uri.parse(
+          "${ApiConfig.baseUrl}/admin/nguoidung/kick/${widget.idKhoaHoc}/$idNguoiDung",
+        ),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      final data = jsonDecode(response.body);
+      if (data["success"] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Đã xóa học viên khỏi lớp thành công"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await fetchChiTiet();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data["message"] ?? "Xóa thất bại"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Lỗi xóa: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Có lỗi xảy ra khi xóa học viên"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -175,8 +236,9 @@ class _ChitietclassscreenState extends State<Chitietclassscreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                Thongbaolopadminscreen(idKhoaHoc: widget.idKhoaHoc),
+                            builder: (context) => Thongbaolopadminscreen(
+                              idKhoaHoc: widget.idKhoaHoc,
+                            ),
                           ),
                         );
                       },
@@ -193,6 +255,7 @@ class _ChitietclassscreenState extends State<Chitietclassscreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 8),
                 Expanded(
                   child: ListView.builder(
                     itemCount: lopHoc!["dangky_khoahoc"].length,
@@ -215,6 +278,17 @@ class _ChitietclassscreenState extends State<Chitietclassscreen> {
                           ),
                           title: Text(user["hoTen"] ?? ""),
                           subtitle: Text(user["email"] ?? ""),
+                          trailing: IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                            onPressed: () => kickHocVien(
+                              user["idNguoiDung"],
+                              user["hoTen"] ?? "",
+                            ),
+                            tooltip: "Xóa học viên",
+                          ),
                         ),
                       );
                     },

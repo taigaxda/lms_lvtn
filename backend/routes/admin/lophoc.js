@@ -292,7 +292,8 @@ router.get('/:id', checkAdmin, async (req, res) => {
                         nguoidung:{
                             select:{
                                 hoTen: true,
-                                email: true
+                                email: true,
+                                idNguoiDung: true
                             }
                         }
                     }

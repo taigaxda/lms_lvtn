@@ -21,10 +21,10 @@ router.get('/search', checkAdmin, async (req, res) => {
     const users = await prisma.nguoidung.findMany({
       where: taiKhoan
         ? {
-            taiKhoan: {
-              contains: taiKhoan,
-            },
-          }
+          taiKhoan: {
+            contains: taiKhoan,
+          },
+        }
         : {},
     })
 
@@ -90,7 +90,7 @@ router.post('/', checkAdmin, async (req, res) => {
         message: "Tài khoản đã tồn tại"
       })
     }
-    const matKhauHash = await bcrypt.hash(matKhau,10)
+    const matKhauHash = await bcrypt.hash(matKhau, 10)
 
     const newUser = await prisma.nguoidung.create({
       data: {
@@ -143,12 +143,12 @@ router.put('/:id', checkAdmin, async (req, res) => {
       trangThai,
       vaiTro
     }
-    
-    if(matKhau && matKhau !== ""){
-      const matKhauHash =  await bcrypt.hash(matKhau,10)
+
+    if (matKhau && matKhau !== "") {
+      const matKhauHash = await bcrypt.hash(matKhau, 10)
       updateObject.matKhau = matKhauHash
     }
-  
+
     const updatedUser = await prisma.nguoidung.update({
       where: { idNguoiDung: id },
       data: updateObject
@@ -210,6 +210,39 @@ router.delete('/:id', checkAdmin, async (req, res) => {
     })
 
   } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.delete('/kick/:idKhoaHoc/:idNguoiDung', checkAdmin, async (req, res) => {
+  try {
+    const idKhoaHoc = parseInt(req.params.idKhoaHoc)
+    const idNguoiDung = parseInt(req.params.idNguoiDung)
+    const dangKy = await prisma.dangky_khoahoc.findFirst({
+      where: {
+        idKhoaHoc,
+        idNguoiDung
+      }
+    })
+    if (!dangKy) {
+      return res.status(404).json({
+        success: false,
+        message: "Học viên không tồn tại trong lớp"
+      })
+    }
+
+    await prisma.dangky_khoahoc.delete({
+      where: {
+        idDangKy: dangKy.idDangKy
+      }
+    })
+
+    res.json({
+      success: true,
+      message: "Admin đã xóa học viên khỏi lớp"
+    })
+  }
+  catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
