@@ -162,6 +162,156 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
     }
   }
 
+  Future<void> moLaiBaiKT(int idHocVien, String hoTen) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận mở lại'),
+        content: Text(
+          'Bạn có chắc muốn mở lại bài kiểm tra cho học viên "$hoTen"?\n\n'
+          'Học viên sẽ được làm lại bài từ đầu và điểm cũ sẽ bị xóa.',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xác nhận mở lại'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("token");
+
+      final response = await http.put(
+        Uri.parse(
+          '$baseUrl/giangvien/quiz/molaibaiKT/${selectedQuiz!}/$idHocVien',
+        ),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${data['message'] ?? 'Đã mở lại bài kiểm tra'}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        if (selectedQuiz != null) {
+          await loadDiem(selectedQuiz!);
+        }
+      } else {
+        throw Exception(data['message'] ?? 'Mở lại thất bại');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+    }
+  }
+
+  void _showMoLaiMenu(Map item) {
+    final daLam = item['diemSo'] != null;
+    final hoTen = item['hoTen'] ?? 'Unknown';
+    final idHocVien = item['idNguoiDung'];
+
+    if (!daLam) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Học viên chưa làm bài, không cần mở lại'),
+          backgroundColor: Colors.grey,
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const ListTile(
+              leading: Icon(Icons.refresh, color: Colors.orange),
+              title: Text(
+                'Mở lại bài kiểm tra',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text('Học viên sẽ được làm lại từ đầu'),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.person, color: Colors.blue),
+              title: Text('Học viên: $hoTen'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.score, color: Colors.green),
+              title: Text('Điểm hiện tại: ${item['diemSo'] ?? 'Chưa có'}'),
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('Hủy'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        moLaiBaiKT(idHocVien, hoTen);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('Xác nhận mở lại'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Color getColor(diem) {
     if (diem == null) return Colors.grey;
     if (diem >= 8) return Colors.green;
@@ -185,7 +335,7 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
     );
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -211,28 +361,38 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
-            child: DropdownButtonFormField<int>(
-              value: selectedQuiz,
-              decoration: const InputDecoration(
-                labelText: "Chọn bài kiểm tra",
-                border: OutlineInputBorder(),
+            child: Container(
+              width: double.infinity,
+              child: DropdownButtonFormField<int>(
+                value: selectedQuiz,
+                decoration: const InputDecoration(
+                  labelText: "Chọn bài kiểm tra",
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: quizzes.map<DropdownMenuItem<int>>((q) {
+                  return DropdownMenuItem(
+                    value: q['idQuiz'],
+                    child: Text(
+                      q['tenQuiz'] ?? "Quiz",
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedQuiz = value;
+                  });
+                  if (value != null) {
+                    loadDiem(value);
+                  }
+                },
+                isExpanded: true,
+                menuMaxHeight: 300,
               ),
-              items: quizzes.map<DropdownMenuItem<int>>((q) {
-                return DropdownMenuItem(
-                  value: q['idQuiz'],
-                  child: Text(q['tenQuiz'] ?? "Quiz"),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedQuiz = value;
-                });
-                if (value != null) {
-                  loadDiem(value);
-                }
-              },
             ),
           ),
+
           if (quizzes.isEmpty && !isLoading)
             const Padding(
               padding: EdgeInsets.all(20),
@@ -243,6 +403,7 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
                 ),
               ),
             ),
+
           Container(
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(12),
@@ -274,58 +435,94 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : list.isEmpty
-                ? const Center(child: Text("Chưa có dữ liệu"))
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      if (selectedQuiz != null) {
-                        await loadDiem(selectedQuiz!);
-                      }
-                    },
-                    child: ListView.builder(
-                      itemCount: list.length,
-                      itemBuilder: (context, index) {
-                        final item = list[index];
+                    ? const Center(child: Text("Chưa có dữ liệu"))
+                    : RefreshIndicator(
+                        onRefresh: () async {
+                          if (selectedQuiz != null) {
+                            await loadDiem(selectedQuiz!);
+                          }
+                        },
+                        child: ListView.builder(
+                          itemCount: list.length,
+                          itemBuilder: (context, index) {
+                            final item = list[index];
+                            final daLam = item['diemSo'] != null;
+                            final hoTen = item['hoTen'] ?? 'Unknown';
+                            final idHocVien = item['idNguoiDung'];
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.blue,
-                              child: Text(
-                                "${index + 1}",
-                                style: const TextStyle(color: Colors.white),
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                            ),
-                            title: Text(
-                              item['hoTen'] ?? "",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(item['email'] ?? ""),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  item['diemSo'] != null
-                                      ? "${item['diemSo']}"
-                                      : "Chưa làm",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: getColor(item['diemSo']),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: daLam ? Colors.blue : Colors.grey,
+                                  child: Text(
+                                    "${index + 1}",
+                                    style: const TextStyle(color: Colors.white),
                                   ),
                                 ),
-                                Text(item['trangThai'] ?? ""),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                                title: Text(
+                                  hoTen,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Text(item['email'] ?? ""),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          item['diemSo'] != null
+                                              ? "${item['diemSo']}"
+                                              : "Chưa làm",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: getColor(item['diemSo']),
+                                          ),
+                                        ),
+                                        Text(
+                                          item['trangThai'] ?? "",
+                                          style: const TextStyle(fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                    if (daLam)
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert, color: Colors.grey),
+                                        onSelected: (value) {
+                                          if (value == 'mo_lai') {
+                                            moLaiBaiKT(idHocVien, hoTen);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem<String>(
+                                            value: 'mo_lai',
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.refresh,
+                                                  color: Colors.orange,
+                                                  size: 18,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Text('Mở lại bài kiểm tra'),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
           ),
         ],
       ),

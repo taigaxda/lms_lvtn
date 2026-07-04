@@ -204,12 +204,12 @@ router.post('/', checkGiangVien, async (req, res) => {
             }
         });
         const idKhoaHocInt = parseInt(idKhoaHoc);
-        try{
+        try {
             const tieuDePush = "Bài kiểm tra mới!";
             const hanNopText = parsedNgayDenHan ? ` Hạn chót: ${new Date(parsedNgayDenHan).toLocaleDateString('vi-VN')}` : '';
             const noiDungPush = `Lớp có bài trắc nghiệm mới: "${tenQuiz}".${hanNopText}`;
             const thongBao = await prisma.announcements.create({
-                data:{
+                data: {
                     idKhoaHoc: idKhoaHocInt,
                     idNguoiDang: idGiangVien,
                     tieuDe: tieuDePush,
@@ -219,7 +219,7 @@ router.post('/', checkGiangVien, async (req, res) => {
                 }
             })
             const dsHocVien = await prisma.dangky_khoahoc.findMany({
-                where:{
+                where: {
                     idKhoaHoc: idKhoaHocInt
                 },
                 include: {
@@ -241,7 +241,7 @@ router.post('/', checkGiangVien, async (req, res) => {
                     }
                 }
             }
-            if(tokensDich.length > 0){
+            if (tokensDich.length > 0) {
                 const oneSignalPayload = {
                     app_id: process.env.ONESIGNAL_APP_ID,
                     include_subscription_ids: tokensDich,
@@ -268,7 +268,7 @@ router.post('/', checkGiangVien, async (req, res) => {
                     console.error("Lỗi gọi API OneSignal khi tạo Quiz:", err.response?.data || err.message)
                 })
             }
-        }catch(pushError){
+        } catch (pushError) {
             console.error("Lỗi xử lý lưu bảng tin / bắn thông báo Quiz ngầm:", pushError.message);
         }
         res.json({
@@ -616,6 +616,89 @@ router.delete('/:idQuiz', checkGiangVien, async (req, res) => {
             success: false,
             error: err.message
         });
+    }
+})
+router.put('/molaibaiKT/:idQuiz/:idHocVien', checkGiangVien, async (req, res) => {
+    try {
+        const idGiangVien = req.user.idNguoiDung
+        const idQuiz = parseInt(req.params.idQuiz)
+        const idHocVien = parseInt(req.params.idHocVien)
+
+        if (isNaN(idQuiz) || isNaN(idHocVien)) {
+            return res.status(400).json({
+                success: false,
+                message: "ID không hợp lệ"
+            })
+        }
+        const quiz = await prisma.quizzes.findUnique({
+            where: {
+                idQuiz: idQuiz
+            },
+            include: {
+                khoahoc: true
+            }
+        })
+        if (!quiz) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy bài kiểm tra"
+            });
+        }
+        if (quiz.khoahoc.idGiangVien !== idGiangVien) {
+            return res.status(403).json({
+                success: false,
+                message: "Bạn không phải giảng viên của khóa học này"
+            })
+        }
+        const dangKy = await prisma.dangky_khoahoc.findFirst({
+            where: {
+                idNguoiDung: idHocVien,
+                idKhoaHoc: quiz.idKhoaHoc
+            }
+        })
+        if (!dangKy) {
+            return res.status(404).json({
+                success: false,
+                message: "Học viên không thuộc khóa học này"
+            })
+        }
+        const daLam = await prisma.quiz_results.findUnique({
+            where: {
+                idNguoiDung_idQuiz: {
+                    idNguoiDung: idHocVien,
+                    idQuiz: idQuiz
+                }
+            }
+        })
+        if (!daLam) {
+            return res.status(400).json({
+                success: false,
+                message: "Học viên chưa làm bài kiểm tra này"
+            })
+        }
+        await prisma.quiz_results.delete({
+            where: {
+                idNguoiDung_idQuiz: {
+                    idNguoiDung: idHocVien,
+                    idQuiz: idQuiz
+                }
+            }
+        })
+        res.json({
+            success: true,
+            message: "Đã mở lại bài kiểm tra cho học viên",
+            data: {
+                idQuiz: idQuiz,
+                idHocVien: idHocVien,
+                tenQuiz: quiz.tenQuiz
+            }
+        })
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            error: err.message
+        })
     }
 })
 

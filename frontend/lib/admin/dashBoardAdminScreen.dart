@@ -355,24 +355,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                       child: buildRolePieChart(),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-                    child: Text(
-                      "Tiến độ học tập",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: buildProgressPieChart(),
-                    ),
-                  ),
-
                   if (avgScores.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -501,56 +483,6 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
                       ),
                     ),
                   ).toList(),
-                  if (recentSubmissions.isNotEmpty)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-                          child: Text(
-                            "Bài nộp gần nhất",
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        ...recentSubmissions.map(
-                          (s) => Card(
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: s['diem'] != null
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.orange.withOpacity(0.1),
-                                child: Icon(
-                                  Icons.upload_file,
-                                  color: s['diem'] != null ? Colors.green : Colors.orange,
-                                ),
-                              ),
-                              title: Text(s['hoTen'] ?? ''),
-                              subtitle: Text(
-                                "${s['tieuDe'] ?? ''} - ${s['tenKhoaHoc'] ?? ''}",
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              trailing: s['diem'] != null
-                                  ? Text(
-                                      "${s['diem']} điểm",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green,
-                                      ),
-                                    )
-                                  : const Text(
-                                      "Chờ chấm",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ).toList(),
-                      ],
-                    ),
-
-                  const SizedBox(height: 20),
                 ],
               ),
             ),

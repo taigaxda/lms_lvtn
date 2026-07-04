@@ -167,6 +167,8 @@ model quiz_results {
 
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
   quizzes   quizzes   @relation(fields: [idQuiz], references: [idQuiz])
+
+  @@unique([idNguoiDung, idQuiz])
 }
 
 model assignments {
