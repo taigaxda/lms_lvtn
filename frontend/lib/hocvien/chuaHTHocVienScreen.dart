@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -7,6 +8,9 @@ import 'package:frontend/api.dart';
 import 'package:frontend/hocvien/lophoc/chiTietLopHocHV.dart';
 import 'package:frontend/hocvien/lophoc/danhSachBaiKTScreen.dart';
 import 'package:frontend/hocvien/lophoc/baitap/dsBaiTapHVScreen.dart';
+import './lophoc/hocBaiScreen.dart';
+import './lophoc/baitap/chiTietBaiTapHVScreen.dart';
+import './lophoc/lamBaiKTScreen.dart';
 
 class ChuaHTHocVienScreen extends StatefulWidget {
   const ChuaHTHocVienScreen({super.key});
@@ -214,10 +218,7 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
       subtitle: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 2,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: isQuaHan
                   ? Colors.red.withOpacity(0.1)
@@ -257,21 +258,21 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => Dsbaitaphvscreen(idKhoaHoc: idKhoaHoc),
+            builder: (_) =>
+                ChiTietBaiTapHVScreen(idAssignment: baiTap['idAssignment']),
           ),
         );
       },
     );
   }
+
   Widget _buildBaiTapCard(Map kh) {
     final assignments = kh['assignments'] as List? ?? [];
     if (assignments.isEmpty) return const SizedBox.shrink();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,10 +311,7 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
                   ),
                   child: Text(
                     '${assignments.length} bài tập',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                 ),
               ],
@@ -321,11 +319,13 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
           ),
           Column(
             children: assignments
-                .map((baiTap) => _buildBaiTapItem(
-                      baiTap,
-                      kh['tenKhoaHoc'] ?? '',
-                      kh['idKhoaHoc'],
-                    ))
+                .map(
+                  (baiTap) => _buildBaiTapItem(
+                    baiTap,
+                    kh['tenKhoaHoc'] ?? '',
+                    kh['idKhoaHoc'],
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -370,6 +370,8 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     final progress = progressList.isNotEmpty ? progressList[0] : null;
 
     final trangThai = progress?['trangThai'] ?? 'chua_hoc';
+    final laVideo = bh['videoUrl'] != null  && bh['videoUrl'].toString().isNotEmpty; 
+    final laTaiLieu = bh['taiLieuUrl'] != null  && bh['taiLieuUrl'].toString().isNotEmpty;
 
     Color color;
     String statusText;
@@ -390,6 +392,12 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
         color = Colors.grey;
         statusText = "Chưa học";
         iconData = Icons.play_circle_outline;
+        if(laVideo){
+          iconData = Icons.play_circle_outline;
+        }
+        else{
+          iconData = Icons.description_outlined;
+        }
     }
 
     final isDangHoc = trangThai == 'dang_hoc';
@@ -421,6 +429,53 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
+            ),
+          ),
+          const SizedBox(width: 8,),
+          if (laVideo)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.videocam, size: 12, color: Colors.blue),
+                SizedBox(width: 2),
+                Text(
+                  'Video',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (laTaiLieu && !laVideo)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.description, size: 12, color: Colors.green),
+                SizedBox(width: 2),
+                Text(
+                  'Tài liệu',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.green,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
           if (isDangHoc) ...[
@@ -516,15 +571,31 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     );
   }
 
+  bool quizQuaHan(String? ngayDenHan) {
+    if (ngayDenHan == null) return false;
+    final hanNop = DateTime.tryParse(ngayDenHan);
+    if (hanNop == null) return false;
+    return DateTime.now().isAfter(hanNop);
+  }
+
   Widget _buildQuizItem(Map quiz, int idKhoaHoc) {
+    final daQuaHan = quizQuaHan(quiz['ngayDenHan']);
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: Colors.red.withOpacity(0.1),
-        child: const Icon(Icons.quiz, color: Colors.red),
+        backgroundColor: daQuaHan
+            ? Colors.red.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
+        child: Icon(
+          daQuaHan ? Icons.lock : Icons.quiz,
+          color: daQuaHan ? Colors.grey : Colors.red,
+        ),
       ),
       title: Text(
         quiz['tenQuiz'] ?? '',
-        style: const TextStyle(fontWeight: FontWeight.w500),
+        style: TextStyle(
+          fontWeight: FontWeight.w500,
+          color: daQuaHan ? Colors.grey : null,
+        ),
       ),
       subtitle: Row(
         children: [
@@ -535,7 +606,7 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '${quiz['thoiGianLamBai'] ?? 0} phút',
+              daQuaHan ? 'Quá hạn' : '${quiz['thoiGianLamBai'] ?? 0} phút',
               style: TextStyle(
                 color: Colors.red,
                 fontSize: 12,
@@ -548,19 +619,25 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
           const SizedBox(width: 4),
           Text(
             _formatDate(quiz['ngayDenHan']),
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 12,
+              color: daQuaHan ? Colors.red : Colors.grey,
+            ),
           ),
         ],
       ),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: Icon(daQuaHan ? Icons.lock : Icons.arrow_forward_ios, size: 16),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => Danhsachbaiktscreen(idKhoaHoc: idKhoaHoc),
-          ),
-        );
+        daQuaHan
+            ? null
+            : Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Lambaiktscreen(idQuiz: quiz['idQuiz']),
+                ),
+              );
       },
+      tileColor: daQuaHan ? Colors.grey.shade50 : null,
     );
   }
 

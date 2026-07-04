@@ -51,7 +51,6 @@ model khoahoc {
   nguoidung      nguoidung?       @relation(fields: [idGiangVien], references: [idNguoiDung])
   baihoc         baihoc[]
   dangky_khoahoc dangky_khoahoc[]
-  progress       progress[]
   quizzes        quizzes[]
   assignments    assignments[]
   announcements  announcements[]
@@ -107,13 +106,11 @@ model comments {
 model progress {
   idProgress  Int                 @id @default(autoincrement())
   idNguoiDung Int
-  idKhoaHoc   Int
   idBaiHoc    Int
   trangThai   progress_trangThai? @default(chua_hoc)
   thoiGianHoc Int?                @default(0)
 
   baihoc    baihoc    @relation(fields: [idBaiHoc], references: [idBaiHoc], onDelete: Cascade)
-  khoahoc   khoahoc   @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
 
   @@unique([idNguoiDung, idBaiHoc])
@@ -275,7 +272,7 @@ model messages {
 
   group groups @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
   nguoidung nguoidung @relation(fields: [idNguoiDung], references: [idNguoiDung])
-  discussion_topics discussion_topics[]
+  topicGoc discussion_topics? 
 }
 
 model fcm_tokens {
@@ -289,10 +286,10 @@ model discussion_topics {
   id          Int      @id @default(autoincrement())
   idGroup     Int
   idNguoiTao  Int
-  idMessageGoc Int?    // Tin nhắn gốc để tạo chủ đề
+  idMessageGoc Int?   @unique
   tieuDe      String
   moTa        String?
-  trangThai   String   @default("active") // active, closed, archived
+  trangThai   String   @default("active")
   ngayTao     DateTime @default(now())
   ngayCapNhat DateTime @updatedAt
 

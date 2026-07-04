@@ -15,22 +15,19 @@ export const uploadToCloudinary = async (file) => {
         const originalName = file.originalname.split('.').slice(0, -1).join('.');
         const extension = file.originalname.split('.').pop().toLowerCase();
 
-        // ✅ Xác định resource_type dựa trên extension
         let resourceType = "auto";
         let publicId = file.originalname;
 
-        // ✅ PDF và các file tài liệu nên dùng "raw"
         const documentExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', '7z'];
         const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
         const videoExtensions = ['mp4', 'mov', 'avi', 'mkv'];
 
         if (documentExtensions.includes(extension)) {
-            resourceType = "raw";  // ✅ Dùng raw cho tài liệu
-            // ✅ Giữ nguyên tên file có đuôi
+            resourceType = "raw";  
             publicId = file.originalname;
         } else if (imageExtensions.includes(extension)) {
             resourceType = "image";
-            publicId = originalName;  // Cloudinary tự thêm đuôi cho ảnh
+            publicId = originalName;  
         } else if (videoExtensions.includes(extension)) {
             resourceType = "video";
             publicId = originalName;
@@ -44,17 +41,15 @@ export const uploadToCloudinary = async (file) => {
             public_id: publicId,
             use_filename: true,
             unique_filename: false,
-            // access_mode: "public",   // ✅ Thêm dòng này
             type: "upload",
-            // ✅ Thêm flag để cho phép tải file
-            // flags: resourceType === "raw" ? "attachment" : undefined,
+    
         });
 
         console.log(`✅ Uploaded: ${result.secure_url}`);
         return result.secure_url;
 
     } catch (error) {
-        console.error("❌ Lỗi upload:", error);
+        console.error("Lỗi upload:", error);
         throw error;
     } finally {
         if (fs.existsSync(file.path)) {

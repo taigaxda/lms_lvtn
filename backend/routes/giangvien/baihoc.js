@@ -18,22 +18,55 @@ const upload = multer({ dest: uploadDir });
 
 router.post('/', checkGiangVien, async (req, res) => {
     try {
-        let { idKhoaHoc, tenBaiHoc, thuTu } = req.body;
+        let { idKhoaHoc, tenBaiHoc, thuTu} = req.body;
         tenBaiHoc = tenBaiHoc ? tenBaiHoc.trim() : undefined;
-
+        const idKhoaHocInt = parseInt(idKhoaHoc)
+        const idNguoiDang = req.user.idNguoiDung
         if (!tenBaiHoc) {
             return res.status(400).json({ success: false, message: "Thiếu tên bài học!" });
         }
         if (!idKhoaHoc) {
             return res.status(400).json({ success: false, message: "Thiếu ID khóa học!" });
         }
-        const idKhoaHocInt = parseInt(idKhoaHoc)
-        const idNguoiDang = req.user.idNguoiDung
+        const khoaHoc = await prisma.khoahoc.findUnique({
+            where: { 
+                idKhoaHoc: idKhoaHocInt 
+            },
+            select: { 
+                idGiangVien: true 
+            }
+        })
+        if (!khoaHoc) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy khóa học!"
+            })
+        }
+
+        if (khoaHoc.idGiangVien !== idNguoiDang) {
+            return res.status(403).json({
+                success: false,
+                message: "Bạn không phải là giảng viên của khóa học này!"
+            })
+        }
+        let thuTuCuoi = thuTu ? parseInt(thuTu) : null
+        if (!thuTuCuoi) {
+            const maxThuTu = await prisma.baihoc.aggregate({
+                where: { 
+                    idKhoaHoc: idKhoaHocInt 
+                },
+                _max: { 
+                    thuTu: true 
+                }
+            })
+            thuTuCuoi = (maxThuTu._max.thuTu ?? 0) + 1;
+        }
+       
         const newBaiHoc = await prisma.baihoc.create({
             data: {
                 idKhoaHoc: parseInt(idKhoaHoc),
                 tenBaiHoc: tenBaiHoc,
-                thuTu: thuTu ? parseInt(thuTu) : 1
+                thuTu: thuTuCuoi
             }
         })
 
@@ -334,7 +367,6 @@ router.get('/thoigianhoc/:idBaiHoc', checkGiangVien, async (req, res) => {
         const dsProgress = await prisma.progress.findMany({
             where:{
                 idBaiHoc: idBaiHoc,
-                idKhoaHoc: baiHoc.idKhoaHoc
             }
         })
         const result = dsHocVien.map(dk=>{

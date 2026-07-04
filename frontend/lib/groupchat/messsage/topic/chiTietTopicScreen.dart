@@ -76,9 +76,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
       final id = prefs.getInt('userId') ?? 0;
       final name = prefs.getString('hoTen') ?? '';
       final vaiTro = prefs.getString('vaiTro') ?? 'hocvien';
-
-      print('User loaded - ID: $id, Name: $name, Role: $vaiTro');
-
       setState(() {
         userId = id;
         userName = name;
@@ -94,7 +91,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
     }
   }
 
-  // ==================== SOCKET ====================
   Future<void> _connectSocket() async {
     if (userId == 0) return;
 
@@ -160,7 +156,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
     _waitForSocketConnection();
   }
 
-  // ==================== SOCKET EVENT HANDLERS ====================
   void _onReceiveMessage(Map<String, dynamic> data) {
     if (!mounted) return;
 
@@ -224,7 +219,6 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
     });
   }
 
-  // ==================== LOAD TOPIC DETAIL ====================
  Future<void> _loadTopicDetail() async {
   try {
     setState(() {

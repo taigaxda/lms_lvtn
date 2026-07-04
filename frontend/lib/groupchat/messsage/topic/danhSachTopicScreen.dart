@@ -76,69 +76,69 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
     }
   }
 
-  Future<void> _createTopicFromMessage() async {
-    _showCreateTopicDialog();
-  }
+  // Future<void> _createTopicFromMessage() async {
+  //   _showCreateTopicDialog();
+  // }
 
-  void _showCreateTopicDialog() {
-    final TextEditingController _tieuDeController = TextEditingController();
-    final TextEditingController _moTaController = TextEditingController();
+  // void _showCreateTopicDialog() {
+  //   final TextEditingController _tieuDeController = TextEditingController();
+  //   final TextEditingController _moTaController = TextEditingController();
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Tạo chủ đề thảo luận'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _tieuDeController,
-              decoration: const InputDecoration(
-                labelText: 'Tiêu đề chủ đề *',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _moTaController,
-              decoration: const InputDecoration(
-                labelText: 'Mô tả (không bắt buộc)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_tieuDeController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng nhập tiêu đề')),
-                );
-                return;
-              }
-              Navigator.pop(context);
-              await _createTopic(
-                tieuDe: _tieuDeController.text.trim(),
-                moTa: _moTaController.text.trim(),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Tạo chủ đề'),
-          ),
-        ],
-      ),
-    );
-  }
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('Tạo chủ đề thảo luận'),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           TextField(
+  //             controller: _tieuDeController,
+  //             decoration: const InputDecoration(
+  //               labelText: 'Tiêu đề chủ đề *',
+  //               border: OutlineInputBorder(),
+  //             ),
+  //           ),
+  //           const SizedBox(height: 12),
+  //           TextField(
+  //             controller: _moTaController,
+  //             decoration: const InputDecoration(
+  //               labelText: 'Mô tả (không bắt buộc)',
+  //               border: OutlineInputBorder(),
+  //             ),
+  //             maxLines: 3,
+  //           ),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text('Hủy'),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () async {
+  //             if (_tieuDeController.text.trim().isEmpty) {
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 const SnackBar(content: Text('Vui lòng nhập tiêu đề')),
+  //               );
+  //               return;
+  //             }
+  //             Navigator.pop(context);
+  //             await _createTopic(
+  //               tieuDe: _tieuDeController.text.trim(),
+  //               moTa: _moTaController.text.trim(),
+  //             );
+  //           },
+  //           style: ElevatedButton.styleFrom(
+  //             backgroundColor: Colors.blue,
+  //             foregroundColor: Colors.white,
+  //           ),
+  //           child: const Text('Tạo chủ đề'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Future<void> _closeTopic(int topicId) async {
     try {
@@ -570,22 +570,22 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
                 },
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: isCreating ? null : _createTopicFromMessage,
-        child: isCreating
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : const Icon(Icons.add),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        tooltip: "Tạo chủ đề mới",
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: isCreating ? null : _createTopicFromMessage,
+      //   child: isCreating
+      //       ? const SizedBox(
+      //           height: 24,
+      //           width: 24,
+      //           child: CircularProgressIndicator(
+      //             color: Colors.white,
+      //             strokeWidth: 2,
+      //           ),
+      //         )
+      //       : const Icon(Icons.add),
+      //   backgroundColor: Colors.blue,
+      //   foregroundColor: Colors.white,
+      //   tooltip: "Tạo chủ đề mới",
+      // ),
     );
   }
 }

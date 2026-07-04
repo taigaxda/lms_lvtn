@@ -14,7 +14,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const upload = multer({ dest: uploadDir });
 
-// ==================== TẠO CHỦ ĐỀ TỪ TIN NHẮN ====================
+//tao chu de tu message
 router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, res) => {
     try {
         const idGroup = parseInt(req.params.idGroup);
@@ -35,7 +35,6 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
             });
         }
 
-        // Kiểm tra tin nhắn gốc
         const messageGoc = await prisma.messages.findUnique({
             where: { idMessage: idMessageGoc },
             include: {
@@ -45,6 +44,12 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
                         hoTen: true,
                         email: true,
                         vaiTro: true
+                    }
+                },
+                group: {
+                    select: {
+                        idGroup: true,
+                        tenNhom: true
                     }
                 }
             }
@@ -56,8 +61,24 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
                 message: "Không tìm thấy tin nhắn gốc"
             });
         }
+        if (messageGoc.idGroup !== idGroup) {
+            return res.status(400).json({
+                success: false,
+                message: "Tin nhắn không thuộc group"
+            });
+        }
+        const tonTaiTopic = await prisma.discussion_topics.findUnique({
+            where: {
+                idMessageGoc: idMessageGoc
+            }
+        })
+        if (tonTaiTopic) {
+            return res.status(400).json({
+                success: false,
+                message: "Tin nhắn này đã được dùng để tạo chủ đề"
+            });
+        }
 
-        // Kiểm tra thành viên nhóm
         const member = await prisma.group_members.findUnique({
             where: {
                 idGroup_idNguoiDung: {
@@ -74,7 +95,6 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
             });
         }
 
-        // Tạo chủ đề
         const topic = await prisma.discussion_topics.create({
             data: {
                 idGroup: idGroup,
@@ -109,7 +129,6 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
             }
         });
 
-        // Thêm người tạo vào danh sách tham gia
         await prisma.discussion_participants.create({
             data: {
                 idTopic: topic.id,
@@ -118,12 +137,11 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
             }
         });
 
-        // Phát sự kiện realtime
         const io = req.app.get('io');
         if (io) {
             io.to(`group_${idGroup}`).emit('new-topic', {
                 topic: topic,
-                message: `📌 ${req.user.hoTen} đã tạo chủ đề: "${tieuDe}"`
+                message: `${req.user.hoTen} đã tạo chủ đề: "${tieuDe}"`
             });
         }
 
@@ -142,7 +160,7 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
     }
 });
 
-// ==================== LẤY DANH SÁCH CHỦ ĐỀ ====================
+// ds chu de
 router.get('/topics/:idGroup', checkGroupPermission, async (req, res) => {
     try {
         const idGroup = parseInt(req.params.idGroup);
@@ -157,10 +175,7 @@ router.get('/topics/:idGroup', checkGroupPermission, async (req, res) => {
 
         const topics = await prisma.discussion_topics.findMany({
             where: {
-                idGroup: idGroup,
-                trangThai: {
-                    not: 'archived'
-                }
+                idGroup: idGroup
             },
             include: {
                 nguoidung: {
@@ -249,115 +264,7 @@ router.get('/topics/:idGroup', checkGroupPermission, async (req, res) => {
     }
 });
 
-// ==================== LẤY CHI TIẾT CHỦ ĐỀ ====================
-// router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
-//     try {
-//         const idTopic = parseInt(req.params.idTopic);
-//         const idNguoiDung = req.user.idNguoiDung;
-
-//         if (isNaN(idTopic)) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "ID chủ đề không hợp lệ"
-//             });
-//         }
-
-//         const topic = await prisma.discussion_topics.findUnique({
-//             where: { id: idTopic },
-//             include: {
-//                 nguoidung: {
-//                     select: {
-//                         idNguoiDung: true,
-//                         hoTen: true,
-//                         email: true,
-//                         vaiTro: true
-//                     }
-//                 },
-//                 tinNhanGoc: {
-//                     include: {
-//                         nguoidung: {
-//                             select: {
-//                                 idNguoiDung: true,
-//                                 hoTen: true,
-//                                 email: true,
-//                                 vaiTro: true
-//                             }
-//                         }
-//                     }
-//                 },
-//                 messages: {
-//                     include: {
-//                         nguoidung: {
-//                             select: {
-//                                 idNguoiDung: true,
-//                                 hoTen: true,
-//                                 email: true,
-//                                 vaiTro: true
-//                             }
-//                         }
-//                     },
-//                     orderBy: {
-//                         ngayTao: 'asc'
-//                     }
-//                 },
-//                 participants: {
-//                     include: {
-//                         nguoidung: {
-//                             select: {
-//                                 idNguoiDung: true,
-//                                 hoTen: true,
-//                                 email: true,
-//                                 vaiTro: true
-//                             }
-//                         }
-//                     }
-//                 },
-//                 _count: {
-//                     select: {
-//                         messages: true,
-//                         participants: true
-//                     }
-//                 }
-//             }
-//         });
-
-//         if (!topic) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Không tìm thấy chủ đề"
-//             });
-//         }
-
-//         // Đánh dấu đã xem
-//         await prisma.discussion_participants.upsert({
-//             where: {
-//                 idTopic_idNguoiDung: {
-//                     idTopic: idTopic,
-//                     idNguoiDung: idNguoiDung
-//                 }
-//             },
-//             update: {},
-//             create: {
-//                 idTopic: idTopic,
-//                 idNguoiDung: idNguoiDung,
-//                 ngayThamGia: new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
-//             }
-//         });
-
-//         res.status(200).json({
-//             success: true,
-//             data: topic
-//         });
-
-//     } catch (err) {
-//         console.error('Lỗi lấy chi tiết chủ đề:', err);
-//         res.status(500).json({
-//             success: false,
-//             message: err.message
-//         });
-//     }
-// });
-// routes/group/topic.js - Sửa API lấy chi tiết chủ đề
+//chi tiet topic
 router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
     try {
         const idTopic = parseInt(req.params.idTopic);
@@ -366,7 +273,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
         const topic = await prisma.discussion_topics.findUnique({
             where: { id: idTopic },
             include: {
-                // ✅ Lấy thông tin người tạo
                 nguoidung: {
                     select: {
                         idNguoiDung: true,
@@ -375,7 +281,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
                         vaiTro: true
                     }
                 },
-                // ✅ Lấy tin nhắn gốc
                 tinNhanGoc: {
                     include: {
                         nguoidung: {
@@ -388,7 +293,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
                         }
                     }
                 },
-                // ✅ Lấy tất cả tin nhắn trong chủ đề
                 messages: {
                     include: {
                         nguoidung: {
@@ -404,7 +308,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
                         ngayTao: 'asc'
                     }
                 },
-                // ✅ Lấy người tham gia
                 participants: {
                     include: {
                         nguoidung: {
@@ -417,7 +320,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
                         }
                     }
                 },
-                // ✅ Lấy thông tin group để kiểm tra trưởng nhóm
                 group: {
                     include: {
                         members: {
@@ -437,7 +339,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
                         }
                     }
                 },
-                // ✅ Đếm số tin nhắn và người tham gia
                 _count: {
                     select: {
                         messages: true,
@@ -447,7 +348,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
             }
         });
 
-        // ✅ Kiểm tra tồn tại
         if (!topic) {
             return res.status(404).json({
                 success: false,
@@ -455,7 +355,6 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
             });
         }
 
-        // ✅ Đánh dấu đã xem
         await prisma.discussion_participants.upsert({
             where: {
                 idTopic_idNguoiDung: {
@@ -484,7 +383,7 @@ router.get('/topic/:idTopic', checkGroupPermission, async (req, res) => {
         });
     }
 });
-// ==================== GỬI TIN NHẮN TRONG CHỦ ĐỀ ====================
+// gui tin nhan
 router.post('/message/:idTopic', checkGroupPermission, upload.single('file'), async (req, res) => {
     try {
         const idTopic = parseInt(req.params.idTopic);
@@ -508,10 +407,13 @@ router.post('/message/:idTopic', checkGroupPermission, upload.single('file'), as
             });
         }
 
-        // Kiểm tra chủ đề tồn tại
         const topic = await prisma.discussion_topics.findUnique({
-            where: { id: idTopic },
-            include: { group: true }
+            where: { 
+                id: idTopic 
+            },
+            include: { 
+                group: true 
+            }
         });
 
         if (!topic) {
@@ -524,11 +426,10 @@ router.post('/message/:idTopic', checkGroupPermission, upload.single('file'), as
         if (topic.trangThai !== 'active') {
             return res.status(400).json({
                 success: false,
-                message: "Chủ đề đã đóng hoặc đã lưu trữ"
+                message: "Chủ đề đã bị đóng"
             });
         }
 
-        // Kiểm tra thành viên nhóm
         const member = await prisma.group_members.findUnique({
             where: {
                 idGroup_idNguoiDung: {
@@ -536,13 +437,13 @@ router.post('/message/:idTopic', checkGroupPermission, upload.single('file'), as
                     idNguoiDung: idNguoiDung
                 }
             }
-        });
+        })
 
         if (!member) {
             return res.status(403).json({
                 success: false,
                 message: "Bạn không phải thành viên của nhóm này"
-            });
+            })
         }
 
         let fileUrl = null;
@@ -570,13 +471,11 @@ router.post('/message/:idTopic', checkGroupPermission, upload.single('file'), as
             }
         });
 
-        // Cập nhật ngày cập nhật của chủ đề
         await prisma.discussion_topics.update({
             where: { id: idTopic },
             data: { ngayCapNhat: new Date(new Date().getTime() + 7 * 60 * 60 * 1000) }
-        });
+        })
 
-        // Phát sự kiện realtime
         const io = req.app.get('io');
         if (io) {
             io.to(`topic_${idTopic}`).emit('receive-topic-message', {
@@ -607,7 +506,7 @@ router.post('/message/:idTopic', checkGroupPermission, upload.single('file'), as
     }
 });
 
-// ==================== ĐÓNG CHỦ ĐỀ ====================
+// dong chu de
 router.put('/close/:idTopic', checkGroupPermission, async (req, res) => {
     try {
         const idTopic = parseInt(req.params.idTopic);
@@ -621,7 +520,9 @@ router.put('/close/:idTopic', checkGroupPermission, async (req, res) => {
         }
 
         const topic = await prisma.discussion_topics.findUnique({
-            where: { id: idTopic },
+            where: { 
+                id: idTopic
+            },
             include: {
                 group: {
                     include: {
@@ -639,9 +540,7 @@ router.put('/close/:idTopic', checkGroupPermission, async (req, res) => {
         }
 
         const isCreator = topic.idNguoiTao === idNguoiDung;
-        const isGroupLeader = topic.group.members.some(m => 
-            m.idNguoiDung === idNguoiDung && m.vaiTroNhom === 'truong_nhom'
-        );
+        const isGroupLeader = topic.group.members.some(m => m.idNguoiDung === idNguoiDung && m.vaiTroNhom === 'truong_nhom');
 
         if (!isCreator && !isGroupLeader) {
             return res.status(403).json({
@@ -649,17 +548,27 @@ router.put('/close/:idTopic', checkGroupPermission, async (req, res) => {
                 message: "Bạn không có quyền đóng chủ đề này"
             });
         }
+        if(topic.trangThai === "closed"){
+            return res.status(400).json({
+                success: false,
+                message: "Chủ đề đã được đóng trước đó"
+            });
+        }
 
         const updated = await prisma.discussion_topics.update({
-            where: { id: idTopic },
-            data: { trangThai: 'closed' }
+            where: { 
+                id: idTopic 
+            },
+            data: { 
+                trangThai: 'closed' 
+            }
         });
 
         const io = req.app.get('io');
         if (io) {
             io.to(`group_${topic.idGroup}`).emit('topic-closed', {
                 topicId: idTopic,
-                message: `📌 Chủ đề "${topic.tieuDe}" đã được đóng`
+                message: `Chủ đề "${topic.tieuDe}" đã được đóng`
             });
         }
 
@@ -678,7 +587,7 @@ router.put('/close/:idTopic', checkGroupPermission, async (req, res) => {
     }
 });
 
-// ==================== MỞ LẠI CHỦ ĐỀ ====================
+// reopen chu de
 router.put('/reopen/:idTopic', checkGroupPermission, async (req, res) => {
     try {
         const idTopic = parseInt(req.params.idTopic);
@@ -710,9 +619,7 @@ router.put('/reopen/:idTopic', checkGroupPermission, async (req, res) => {
         }
 
         const isCreator = topic.idNguoiTao === idNguoiDung;
-        const isGroupLeader = topic.group.members.some(m => 
-            m.idNguoiDung === idNguoiDung && m.vaiTroNhom === 'truong_nhom'
-        );
+        const isGroupLeader = topic.group.members.some(m =>m.idNguoiDung === idNguoiDung && m.vaiTroNhom === 'truong_nhom');
 
         if (!isCreator && !isGroupLeader) {
             return res.status(403).json({
@@ -720,24 +627,27 @@ router.put('/reopen/:idTopic', checkGroupPermission, async (req, res) => {
                 message: "Bạn không có quyền mở lại chủ đề này"
             });
         }
-
-        if (topic.trangThai === 'archived') {
+        if(topic.trangThai === "active"){
             return res.status(400).json({
                 success: false,
-                message: "Không thể mở lại chủ đề đã lưu trữ"
+                message: "Chỉ có thể mở lại chủ đề đã đóng"
             });
         }
 
         const updated = await prisma.discussion_topics.update({
-            where: { id: idTopic },
-            data: { trangThai: 'active' }
+            where: { 
+                id: idTopic 
+            },
+            data: { 
+                trangThai: 'active' 
+            }
         });
 
         const io = req.app.get('io');
         if (io) {
             io.to(`group_${topic.idGroup}`).emit('topic-reopened', {
                 topicId: idTopic,
-                message: `📌 Chủ đề "${topic.tieuDe}" đã được mở lại`
+                message: `Chủ đề "${topic.tieuDe}" đã được mở lại`
             });
         }
 
@@ -754,7 +664,8 @@ router.put('/reopen/:idTopic', checkGroupPermission, async (req, res) => {
             message: err.message
         });
     }
-});
+})
+
 router.put('/message/:idMessage', checkGroupPermission, async (req, res) => {
     try {
         const idMessage = parseInt(req.params.idMessage);
@@ -775,7 +686,6 @@ router.put('/message/:idMessage', checkGroupPermission, async (req, res) => {
             });
         }
 
-        // Kiểm tra tin nhắn tồn tại
         const message = await prisma.discussion_messages.findUnique({
             where: { id: idMessage },
             include: {
@@ -798,7 +708,6 @@ router.put('/message/:idMessage', checkGroupPermission, async (req, res) => {
             });
         }
 
-        // Chỉ người gửi mới được sửa
         if (message.idNguoiDung !== idNguoiDung) {
             return res.status(403).json({
                 success: false,
@@ -806,7 +715,6 @@ router.put('/message/:idMessage', checkGroupPermission, async (req, res) => {
             });
         }
 
-        // Kiểm tra chủ đề có đang active không
         if (message.topic.trangThai !== 'active') {
             return res.status(400).json({
                 success: false,
@@ -815,7 +723,9 @@ router.put('/message/:idMessage', checkGroupPermission, async (req, res) => {
         }
 
         const updatedMessage = await prisma.discussion_messages.update({
-            where: { id: idMessage },
+            where: { 
+                id: idMessage 
+            },
             data: {
                 noiDung: noiDung.trim()
             },
@@ -831,7 +741,6 @@ router.put('/message/:idMessage', checkGroupPermission, async (req, res) => {
             }
         });
 
-        // Phát sự kiện realtime
         const io = req.app.get('io');
         if (io) {
             io.to(`topic_${message.idTopic}`).emit('topic-message-edited', {
@@ -856,7 +765,7 @@ router.put('/message/:idMessage', checkGroupPermission, async (req, res) => {
     }
 });
 
-// ==================== XÓA TIN NHẮN TRONG CHỦ ĐỀ ====================
+// xoa tin nhan
 router.delete('/message/:idMessage', checkGroupPermission, async (req, res) => {
     try {
         const idMessage = parseInt(req.params.idMessage);
@@ -870,7 +779,6 @@ router.delete('/message/:idMessage', checkGroupPermission, async (req, res) => {
             });
         }
 
-        // Kiểm tra tin nhắn tồn tại
         const message = await prisma.discussion_messages.findUnique({
             where: { id: idMessage },
             include: {
@@ -899,11 +807,10 @@ router.delete('/message/:idMessage', checkGroupPermission, async (req, res) => {
             });
         }
 
-        // Kiểm tra quyền xóa
+        
         const isGiangVienMessage = message.nguoidung.vaiTro === 'giangvien';
         const isGiangVien = vaiTro === 'giangvien';
-        
-        // Giảng viên chỉ có thể xóa tin nhắn của giảng viên
+
         if (isGiangVienMessage && !isGiangVien) {
             return res.status(403).json({
                 success: false,
@@ -912,7 +819,7 @@ router.delete('/message/:idMessage', checkGroupPermission, async (req, res) => {
         }
 
         const laNguoiGui = message.idNguoiDung === idNguoiDung;
-        const laTruongNhom = message.topic.group.members.some(m => 
+        const laTruongNhom = message.topic.group.members.some(m =>
             m.idNguoiDung === idNguoiDung && m.vaiTroNhom === 'truong_nhom'
         );
 
@@ -923,7 +830,6 @@ router.delete('/message/:idMessage', checkGroupPermission, async (req, res) => {
             });
         }
 
-        // Kiểm tra chủ đề có đang active không
         if (message.topic.trangThai !== 'active') {
             return res.status(400).json({
                 success: false,
@@ -935,7 +841,6 @@ router.delete('/message/:idMessage', checkGroupPermission, async (req, res) => {
             where: { id: idMessage }
         });
 
-        // Phát sự kiện realtime
         const io = req.app.get('io');
         if (io) {
             io.to(`topic_${message.idTopic}`).emit('topic-message-deleted', {
