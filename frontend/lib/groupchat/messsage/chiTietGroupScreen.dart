@@ -198,13 +198,10 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   // ==================== SOCKET EVENT HANDLERS ====================
   void _onReceiveMessage(Map<String, dynamic> data) {
     if (!mounted) return;
-    print('📩 Received message: ${data['content'] ?? data['noiDung']}');
+    print('Received message: ${data['content'] ?? data['noiDung']}');
 
-    // Kiểm tra nếu tin nhắn đã tồn tại thì không thêm nữa
     final exists = messages.any((m) => m['idMessage'] == data['idMessage']);
     if (exists) return;
-
-    // ✅ Format message để khớp với cấu trúc UI
     final newMessage = {
       'idMessage': data['idMessage'] ?? DateTime.now().millisecondsSinceEpoch,
       'noiDung': data['content'] ?? data['noiDung'] ?? '',
@@ -228,7 +225,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
 
   void _onMessageEdited(Map<String, dynamic> data) {
     if (!mounted) return;
-    print('📝 Message edited: ${data['idMessage']}');
+    print('Message edited: ${data['idMessage']}');
 
     setState(() {
       final index = messages.indexWhere(
@@ -243,7 +240,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
 
   void _onMessageDeleted(Map<String, dynamic> data) {
     if (!mounted) return;
-    print('🗑️ Message deleted: ${data['idMessage']}');
+    print('Message deleted: ${data['idMessage']}');
 
     setState(() {
       messages.removeWhere((m) => m['idMessage'] == data['idMessage']);
@@ -644,7 +641,6 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hiển thị tin nhắn gốc
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -656,7 +652,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '📎 Tin nhắn gốc:',
+                    'Tin nhắn gốc:',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -672,7 +668,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
                   ),
                   if (message['fileUrl'] != null && message['fileUrl'].isNotEmpty)
                     Text(
-                      '📎 Có file đính kèm',
+                      'Có file đính kèm',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.blue.shade600,
@@ -814,7 +810,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     final hasText = message['noiDung'] != null && message['noiDung'].isNotEmpty;
     final isGiangVienMessage = message['nguoidung']['vaiTro'] == 'giangvien';
 
-     final canDelete = isMe || (_isTruongNhom && !isGiangVienMessage);
+    final canDelete = isMe || (_isTruongNhom && !isGiangVienMessage);
     final canEdit = isMe;
 
     return RepaintBoundary(

@@ -606,19 +606,71 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Bạn chưa trả lời các câu hỏi sau:'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: cauChuaTraLoi.map((id) {
-                  return Chip(
-                    label: Text('Câu $id'),
-                    backgroundColor: Colors.orange.shade100,
-                  );
-                }).toList(),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.warning, color: Colors.orange[700]),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Bạn còn ${cauChuaTraLoi.length} câu chưa trả lời',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Đã trả lời: ${answers.length}/${questions.length}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    if (cauChuaTraLoi.length <= 10) ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Các câu chưa trả lời:',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 4,
+                        children: cauChuaTraLoi.map((id) {
+                          return Chip(
+                            label: Text('$id'),
+                            backgroundColor: Colors.orange.shade100,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          );
+                        }).toList(),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Các câu: ${cauChuaTraLoi.take(10).join(", ")}...',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
-              const Text('Bạn có chắc chắn muốn nộp bài?'),
+              const Text(
+                'Bạn có chắc chắn muốn nộp bài?',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           actions: [
@@ -914,193 +966,271 @@ class _LamBaiKTScreenState extends State<Lambaiktscreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(quiz?['tenQuiz'] ?? "Đang tải..."),
-        backgroundColor: Colors.blue,
-        iconTheme: const IconThemeData(color: Colors.white),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.grid_view),
-            onPressed: _showQuestionNavigator,
-            tooltip: 'Xem danh sách câu hỏi',
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Center(
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : remainingTime == -1
-                  ? const Text("Không giới hạn")
-                  : Text(
-                      formatTime(remainingTime),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (bool didPop) async {
+        if (didPop) {
+          return;
+        }
+        final shouldPop = await _canhBaoThoatBaiKT();
+        if (shouldPop) {
+          await submitQuiz();
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(quiz?['tenQuiz'] ?? "Đang tải..."),
+          backgroundColor: Colors.blue,
+          iconTheme: const IconThemeData(color: Colors.white),
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.grid_view),
+              onPressed: _showQuestionNavigator,
+              tooltip: 'Xem danh sách câu hỏi',
             ),
-          ),
-        ],
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red.shade300,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      errorMessage!,
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text("Quay lại"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : questions.isEmpty
-          ? const Center(
-              child: Text(
-                "Bài kiểm tra không có câu hỏi",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            )
-          : Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  color: Colors.grey.shade50,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: answers.length / questions.length,
-                            backgroundColor: Colors.grey.shade200,
-                            color: answers.length == questions.length
-                                ? Colors.green
-                                : Colors.blue,
-                            minHeight: 8,
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Center(
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${answers.length}/${questions.length}',
+                      )
+                    : remainingTime == -1
+                    ? const Text("Không giới hạn")
+                    : Text(
+                        formatTime(remainingTime),
                         style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : errorMessage != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red.shade300,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        errorMessage!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text("Quay lại"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    children: questions.map((q) => buildQuestion(q)).toList(),
-                  ),
+              )
+            : questions.isEmpty
+            ? const Center(
+                child: Text(
+                  "Bài kiểm tra không có câu hỏi",
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              "Đã trả lời: ${answers.length}/${questions.length}",
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
+              )
+            : Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    color: Colors.grey.shade50,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: answers.length / questions.length,
+                              backgroundColor: Colors.grey.shade200,
+                              color: answers.length == questions.length
+                                  ? Colors.green
+                                  : Colors.blue,
+                              minHeight: 8,
                             ),
-                            if (_getCauChuaTraLoi().isNotEmpty)
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${answers.length}/${questions.length}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.only(bottom: 80),
+                      children: questions.map((q) => buildQuestion(q)).toList(),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Text(
-                                'Còn ${_getCauChuaTraLoi().length} câu chưa làm',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.orange[700],
+                                "Đã trả lời: ${answers.length}/${questions.length}",
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
                                 ),
                               ),
-                            Text(
-                              '${_formatThoiGian(_thoiGianLamBai)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+                              if (_getCauChuaTraLoi().isNotEmpty)
+                                Text(
+                                  'Còn ${_getCauChuaTraLoi().length} câu chưa làm',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.orange[700],
+                                  ),
+                                ),
+                              Text(
+                                '${_formatThoiGian(_thoiGianLamBai)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: submitQuiz,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(120, 45),
-                          backgroundColor: answers.length == questions.length
-                              ? Colors.green
-                              : Colors.blue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            ],
                           ),
                         ),
-                        child: Text(
-                          answers.length == questions.length
-                              ? "Nộp bài"
-                              : "Nộp bài",
+                        ElevatedButton(
+                          onPressed: submitQuiz,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(120, 45),
+                            backgroundColor: answers.length == questions.length
+                                ? Colors.green
+                                : Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            answers.length == questions.length
+                                ? "Nộp bài"
+                                : "Nộp bài",
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ],
+              ),
+      ),
+    );
+    // return Scaffold(
+
+    // );
+  }
+
+  Future<bool> _canhBaoThoatBaiKT() async {
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text(
+              'Xác nhận thoát',
+              style: TextStyle(color: Colors.orange),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bạn có chắc chắn muốn thoát?',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Bài làm sẽ được tự động nộp và chấm điểm!',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Số câu đã trả lời: ${answers.length}/${questions.length}',
+                  style: TextStyle(fontSize: 14),
                 ),
               ],
             ),
-    );
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  'Tiếp tục làm',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Thoát và nộp bài'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 }

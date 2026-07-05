@@ -27,9 +27,9 @@ model nguoidung {
   messages       messages[]
   announcements  announcements[] 
   fcm_tokens     fcm_tokens[]
-  discussion_topics discussion_topics[]        // người tạo chủ đề
-  discussion_messages discussion_messages[]    // tin nhắn trong chủ đề
-  discussion_participants discussion_participants[] // người tham gia
+  discussion_topics discussion_topics[]        
+  discussion_messages discussion_messages[]    
+  discussion_participants discussion_participants[]
 }
 
 enum nguoidung_vaiTro {
@@ -297,7 +297,7 @@ model discussion_topics {
 
   group       groups   @relation(fields: [idGroup], references: [idGroup], onDelete: Cascade)
   nguoidung   nguoidung @relation(fields: [idNguoiTao], references: [idNguoiDung], onDelete: Cascade)
-  tinNhanGoc  messages? @relation(fields: [idMessageGoc], references: [idMessage], onDelete: SetNull)
+  tinNhanGoc  messages? @relation(fields: [idMessageGoc], references: [idMessage], onDelete: Cascade)
   messages    discussion_messages[]
   participants discussion_participants[]
 

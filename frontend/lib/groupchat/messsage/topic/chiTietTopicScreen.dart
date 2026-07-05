@@ -27,7 +27,8 @@ class ChiTietTopicScreen extends StatefulWidget {
   State<ChiTietTopicScreen> createState() => _ChiTietTopicScreenState();
 }
 
-class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final String apiUrl = '${ApiConfig.baseUrl}/topics';
@@ -42,6 +43,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
   PlatformFile? _pickedFile;
   bool _isSocketConnected = false;
   Map<String, dynamic>? topicDetail;
+  bool _dongTopic = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -219,48 +221,49 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
     });
   }
 
- Future<void> _loadTopicDetail() async {
-  try {
-    setState(() {
-      isLoading = true;
-    });
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
-    final response = await http.get(
-      Uri.parse('$apiUrl/topic/${widget.topicId}'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final topic = data['data'];
+  Future<void> _loadTopicDetail() async {
+    try {
       setState(() {
-        topicDetail = topic;
-        messages = List<Map<String, dynamic>>.from(topic['messages'] ?? []);
+        isLoading = true;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.get(
+        Uri.parse('$apiUrl/topic/${widget.topicId}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final topic = data['data'];
+        setState(() {
+          topicDetail = topic;
+          messages = List<Map<String, dynamic>>.from(topic['messages'] ?? []);
+          _dongTopic = topic['trangThai'] == 'closed';
+          isLoading = false;
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      } else {
+        throw Exception('Lỗi tải chi tiết chủ đề');
+      }
+    } catch (e) {
+      print('Lỗi load topic detail: $e');
+      setState(() {
         isLoading = false;
       });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
-    } else {
-      throw Exception('Lỗi tải chi tiết chủ đề');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi tải chi tiết chủ đề: $e')));
     }
-  } catch (e) {
-    print('Lỗi load topic detail: $e');
-    setState(() {
-      isLoading = false;
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Lỗi tải chi tiết chủ đề: $e')));
   }
-}
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -273,7 +276,11 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
   }
 
   // ==================== SEND MESSAGE ====================
-  Future<void> _sendMessage({String? text,File? file, PlatformFile? platformFile,}) async {
+  Future<void> _sendMessage({
+    String? text,
+    File? file,
+    PlatformFile? platformFile,
+  }) async {
     final messageText = text ?? _messageController.text.trim();
     if (messageText.isEmpty && file == null && platformFile == null) return;
 
@@ -563,6 +570,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
       ),
     );
   }
+
   // ==================== BUILD MESSAGE ITEM ====================
   Widget _buildMessageItem(Map<String, dynamic> message) {
     final isMe = message['nguoidung']['idNguoiDung'] == userId;
@@ -730,7 +738,8 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
     }
     final members = group['members'] as List;
     for (var member in members) {
-      final memberId = member['idNguoiDung'] ?? member['nguoidung']?['idNguoiDung'];
+      final memberId =
+          member['idNguoiDung'] ?? member['nguoidung']?['idNguoiDung'];
       print('memberId: $memberId, userId: $userId');
       if (memberId == userId) {
         print('User $userId is group leader');
@@ -871,6 +880,36 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen> with AutomaticK
 
   // ==================== BUILD INPUT BAR ====================
   Widget _buildInputBar() {
+    if (_dongTopic) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              blurRadius: 4,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline, color: Colors.grey.shade600, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Chủ đề đã bị đóng, không thể gửi tin nhắn',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
