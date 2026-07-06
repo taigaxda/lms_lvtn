@@ -36,7 +36,9 @@ router.post('/create-from-message/:idGroup', checkGroupPermission, async (req, r
         }
 
         const messageGoc = await prisma.messages.findUnique({
-            where: { idMessage: idMessageGoc },
+            where: { 
+                idMessage: idMessageGoc 
+            },
             include: {
                 nguoidung: {
                     select: {

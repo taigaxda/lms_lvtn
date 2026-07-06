@@ -650,6 +650,14 @@ router.put('/molaibaiKT/:idQuiz/:idHocVien', checkGiangVien, async (req, res) =>
                 message: "Bạn không phải giảng viên của khóa học này"
             })
         }
+        const now = new Date()
+        const ngayDenHan = new Date(quiz.ngayDenHan)
+        if(ngayDenHan && ngayDenHan<now){
+            return res.status(400).json({
+                success: false,
+                message: `Không thể mở lại bài kiểm tra vì đã quá hạn (hạn: ${ngayDenHan.toLocaleString()})`
+            })
+        }
         const dangKy = await prisma.dangky_khoahoc.findFirst({
             where: {
                 idNguoiDung: idHocVien,
