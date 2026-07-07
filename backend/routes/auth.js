@@ -511,20 +511,6 @@ router.put('/profile', checkAuth, async (req, res) => {
                     message: "Email không hợp lệ"
                 })
             }
-
-            const existingEmail = await prisma.nguoidung.findFirst({
-                where: {
-                    email: email,
-                    idNguoiDung: { not: idNguoiDung }
-                }
-            })
-
-            if (existingEmail) {
-                return res.status(409).json({
-                    success: false,
-                    message: "Email đã được sử dụng bởi tài khoản khác"
-                })
-            }
         }
 
         if (hoTen) {
