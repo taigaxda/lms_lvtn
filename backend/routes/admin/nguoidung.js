@@ -221,8 +221,7 @@ router.delete('/:id', checkAdmin, async (req, res) => {
     if (user.idNguoiDung === idNguoiDungHT) {
       return res.status(403).json({
         message: 'Không thể xóa chính bản thân'
-      }
-      )
+      })
     }
     const [dangKy, khoaHoc] = await Promise.all([
       prisma.dangky_khoahoc.count({
