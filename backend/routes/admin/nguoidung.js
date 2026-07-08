@@ -178,6 +178,16 @@ router.put('/:id', checkAdmin, async (req, res) => {
         })
       }
     }
+    const existingUser = await prisma.nguoidung.findUnique({
+      where: { idNguoiDung: id }
+    })
+
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy người dùng"
+      })
+    }
     let updateObject = {
       hoTen,
       email,
