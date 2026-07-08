@@ -2,7 +2,6 @@ import express from 'express'
 import { prisma } from '../../prisma/client.js'
 import { checkAdmin } from '../middleware.js'
 import bcrypt from 'bcrypt'
-import { use } from 'react'
 
 const router = express.Router()
 const kiemTraPassword = (password) => {
