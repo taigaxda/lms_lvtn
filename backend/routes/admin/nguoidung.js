@@ -5,6 +5,31 @@ import bcrypt from 'bcrypt'
 import { use } from 'react'
 
 const router = express.Router()
+const kiemTraPassword = (password) => {
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{6,}$/
+  if (!password) {
+    return {
+      isValid: false,
+      message: "Vui lòng nhập mật khẩu"
+    }
+  }
+  if (password.length < 6) {
+    return {
+      isValid: false,
+      message: "Mật khẩu phải có ít nhất 6 ký tự"
+    }
+  }
+  if (!passwordRegex.test(password)) {
+    return {
+      isValid: false,
+      message: "Mật khẩu phải bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt (@$!%*?&.)"
+    }
+  }
+  return {
+    isValid: true,
+    message: "Mật khẩu hợp lệ"
+  }
+}
 
 router.get('/', checkAdmin, async (req, res) => {
   try {
@@ -82,6 +107,13 @@ router.post('/', checkAdmin, async (req, res) => {
         message: "Họ tên chỉ được chứa chữ cái và khoảng trắng"
       })
     }
+    const matKhauManh = kiemTraPassword(matKhau)
+    if (!matKhauManh.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: matKhauManh.message
+      })
+    }
     const existing = await prisma.nguoidung.findUnique({
       where: { taiKhoan }
     })
@@ -138,6 +170,15 @@ router.put('/:id', checkAdmin, async (req, res) => {
         message: "Họ tên chỉ được chứa chữ cái và khoảng trắng"
       })
     }
+    if (matKhau && matKhau !== "") {
+      const matKhauManh = kiemTraPassword(matKhau)
+      if (!matKhauManh.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: matKhauManh.message
+        })
+      }
+    }
     let updateObject = {
       hoTen,
       email,
@@ -151,7 +192,9 @@ router.put('/:id', checkAdmin, async (req, res) => {
     }
 
     const updatedUser = await prisma.nguoidung.update({
-      where: { idNguoiDung: id },
+      where: { 
+        idNguoiDung: id 
+      },
       data: updateObject
     })
 
