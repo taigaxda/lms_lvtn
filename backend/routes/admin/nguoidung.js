@@ -2,6 +2,7 @@ import express from 'express'
 import { prisma } from '../../prisma/client.js'
 import { checkAdmin } from '../middleware.js'
 import bcrypt from 'bcrypt'
+import { use } from 'react'
 
 const router = express.Router()
 
@@ -163,20 +164,33 @@ router.put('/:id', checkAdmin, async (req, res) => {
 router.delete('/:id', checkAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id)
+    const idNguoiDungHT = req.user.idNguoiDung
     const { force } = req.query
 
     const user = await prisma.nguoidung.findUnique({
-      where: { idNguoiDung: id }
+      where: {
+        idNguoiDung: id
+      }
     })
     if (!user) {
       return res.status(404).json({ message: 'User không tồn tại' })
     }
+    if (user.idNguoiDung === idNguoiDungHT) {
+      return res.status(403).json({
+        message: 'Không thể xóa chính bản thân'
+      }
+      )
+    }
     const [dangKy, khoaHoc] = await Promise.all([
       prisma.dangky_khoahoc.count({
-        where: { idNguoiDung: id }
+        where: {
+          idNguoiDung: id
+        }
       }),
       prisma.khoahoc.count({
-        where: { idGiangVien: id }
+        where: {
+          idGiangVien: id
+        }
       })
     ])
 
@@ -194,14 +208,22 @@ router.delete('/:id', checkAdmin, async (req, res) => {
     }
     await prisma.$transaction([
       prisma.dangky_khoahoc.deleteMany({
-        where: { idNguoiDung: id }
+        where: {
+          idNguoiDung: id
+        }
       }),
       prisma.khoahoc.updateMany({
-        where: { idGiangVien: id },
-        data: { idGiangVien: null }
+        where: {
+          idGiangVien: id
+        },
+        data: {
+          idGiangVien: null
+        }
       }),
       prisma.nguoidung.delete({
-        where: { idNguoiDung: id }
+        where: {
+          idNguoiDung: id
+        }
       })
     ])
     res.json({
