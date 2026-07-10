@@ -21,6 +21,7 @@ import commentsRoutes from './routes/comments.js'
 import groupRoutes from './routes/group/group.js'
 import messageRoutes from './routes/group/message.js'
 import topicsRoutes from './routes/group/topic.js'
+import hocVienAIRoutes from './routes/hocvien/ai.js'
 import cors from 'cors'
 import dotenv from 'dotenv';
 dotenv.config();
@@ -67,6 +68,7 @@ app.use('/comments',commentsRoutes)
 app.use('/groups',groupRoutes)
 app.use('/messages',messageRoutes)
 app.use('/topics',topicsRoutes)
+app.use('/hocvien/ai',hocVienAIRoutes)
 app.use('/', test)
 
 io.on('connection', (socket) => {
@@ -228,7 +230,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ✅ Sửa tin nhắn trong topic
+  //Sửa tin nhắn trong topic
   socket.on('edit-topic-message', (data) => {
     const topicId = data.topicId;
     if (!topicId) return;
@@ -240,7 +242,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ✅ Xóa tin nhắn trong topic
+  //Xóa tin nhắn trong topic
   socket.on('delete-topic-message', (data) => {
     const topicId = data.topicId;
     if (!topicId) return;
@@ -253,12 +255,12 @@ io.on('connection', (socket) => {
 
   // Disconnect
   socket.on('disconnect', () => {
-    console.log('🔴 Client disconnected:', socket.id);
+    console.log('Client disconnected:', socket.id);
   });
 
   // Error handling
   socket.on('error', (error) => {
-    console.error('❌ Socket error:', error);
+    console.error('Socket error:', error);
   });
 });
 

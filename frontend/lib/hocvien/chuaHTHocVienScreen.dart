@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -6,9 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/hocvien/menuUI/hocVienMenuBar.dart';
 import 'package:frontend/api.dart';
 import 'package:frontend/hocvien/lophoc/chiTietLopHocHV.dart';
-import 'package:frontend/hocvien/lophoc/danhSachBaiKTScreen.dart';
-import 'package:frontend/hocvien/lophoc/baitap/dsBaiTapHVScreen.dart';
-import './lophoc/hocBaiScreen.dart';
 import './lophoc/baitap/chiTietBaiTapHVScreen.dart';
 import './lophoc/lamBaiKTScreen.dart';
 

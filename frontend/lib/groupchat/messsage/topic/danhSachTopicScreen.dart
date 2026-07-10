@@ -264,55 +264,55 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
     }
   }
 
-  Future<void> _createTopic({
-    required String tieuDe,
-    required String moTa,
-  }) async {
-    try {
-      setState(() {
-        isCreating = true;
-      });
+  // Future<void> _createTopic({
+  //   required String tieuDe,
+  //   required String moTa,
+  // }) async {
+  //   try {
+  //     setState(() {
+  //       isCreating = true;
+  //     });
 
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString("token");
-      final response = await http.post(
-        Uri.parse('$apiUrl/create-from-message/${widget.idGroup}'),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: jsonEncode({
-          "idMessageGoc": null,
-          "tieuDe": tieuDe,
-          "moTa": moTa,
-        }),
-      );
+  //     final prefs = await SharedPreferences.getInstance();
+  //     final token = prefs.getString("token");
+  //     final response = await http.post(
+  //       Uri.parse('$apiUrl/create-from-message/${widget.idGroup}'),
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": "Bearer $token",
+  //       },
+  //       body: jsonEncode({
+  //         "idMessageGoc": null,
+  //         "tieuDe": tieuDe,
+  //         "moTa": moTa,
+  //       }),
+  //     );
 
-      final data = jsonDecode(response.body);
+  //     final data = jsonDecode(response.body);
 
-      if (response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tạo chủ đề thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        await fetchTopics();
-        setState(() {
-          isCreating = false;
-        });
-      } else {
-        throw Exception(data['message'] ?? 'Tạo chủ đề thất bại');
-      }
-    } catch (e) {
-      setState(() {
-        isCreating = false;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
-    }
-  }
+  //     if (response.statusCode == 201) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(
+  //           content: Text('Tạo chủ đề thành công!'),
+  //           backgroundColor: Colors.green,
+  //         ),
+  //       );
+  //       await fetchTopics();
+  //       setState(() {
+  //         isCreating = false;
+  //       });
+  //     } else {
+  //       throw Exception(data['message'] ?? 'Tạo chủ đề thất bại');
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       isCreating = false;
+  //     });
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
+  //   }
+  // }
 
   void _navigateToTopicDetail(Map topic) {
     Navigator.push(
@@ -545,7 +545,7 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('💬 Chủ đề - ${widget.tenNhom}'),
+        title: Text('Chủ đề - ${widget.tenNhom}'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
@@ -570,22 +570,6 @@ class _DanhSachTopicScreenState extends State<DanhSachTopicScreen> {
                 },
               ),
             ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: isCreating ? null : _createTopicFromMessage,
-      //   child: isCreating
-      //       ? const SizedBox(
-      //           height: 24,
-      //           width: 24,
-      //           child: CircularProgressIndicator(
-      //             color: Colors.white,
-      //             strokeWidth: 2,
-      //           ),
-      //         )
-      //       : const Icon(Icons.add),
-      //   backgroundColor: Colors.blue,
-      //   foregroundColor: Colors.white,
-      //   tooltip: "Tạo chủ đề mới",
-      // ),
     );
   }
 }

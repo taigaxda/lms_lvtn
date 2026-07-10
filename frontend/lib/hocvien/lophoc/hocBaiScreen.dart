@@ -30,7 +30,7 @@ class _HocBaiScreenState extends State<HocBaiScreen> {
   bool daBaoHoanThanh = false;
   Timer? _trackingTimer;
   int _tongThoiGianDaHoc = 0;
-  static const int _INTERVAL_GUI = 5;
+  static const int _INTERVAL_GUI = 1;
 
   @override
   void initState() {

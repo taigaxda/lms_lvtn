@@ -224,93 +224,93 @@ class _QlDiemGVScreenState extends State<QlDiemGVScreen> {
     }
   }
 
-  void _showMoLaiMenu(Map item) {
-    final daLam = item['diemSo'] != null;
-    final hoTen = item['hoTen'] ?? 'Unknown';
-    final idHocVien = item['idNguoiDung'];
+  // void _showMoLaiMenu(Map item) {
+  //   final daLam = item['diemSo'] != null;
+  //   final hoTen = item['hoTen'] ?? 'Unknown';
+  //   final idHocVien = item['idNguoiDung'];
 
-    if (!daLam) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Học viên chưa làm bài, không cần mở lại'),
-          backgroundColor: Colors.grey,
-        ),
-      );
-      return;
-    }
+  //   if (!daLam) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //         content: Text('Học viên chưa làm bài, không cần mở lại'),
+  //         backgroundColor: Colors.grey,
+  //       ),
+  //     );
+  //     return;
+  //   }
 
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const ListTile(
-              leading: Icon(Icons.refresh, color: Colors.orange),
-              title: Text(
-                'Mở lại bài kiểm tra',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text('Học viên sẽ được làm lại từ đầu'),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.person, color: Colors.blue),
-              title: Text('Học viên: $hoTen'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.score, color: Colors.green),
-              title: Text('Điểm hiện tại: ${item['diemSo'] ?? 'Chưa có'}'),
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text('Hủy'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        moLaiBaiKT(idHocVien, hoTen);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text('Xác nhận mở lại'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  //   showModalBottomSheet(
+  //     context: context,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  //     ),
+  //     builder: (context) => SafeArea(
+  //       child: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           Container(
+  //             width: 40,
+  //             height: 4,
+  //             margin: const EdgeInsets.symmetric(vertical: 12),
+  //             decoration: BoxDecoration(
+  //               color: Colors.grey.shade300,
+  //               borderRadius: BorderRadius.circular(2),
+  //             ),
+  //           ),
+  //           const ListTile(
+  //             leading: Icon(Icons.refresh, color: Colors.orange),
+  //             title: Text(
+  //               'Mở lại bài kiểm tra',
+  //               style: TextStyle(fontWeight: FontWeight.bold),
+  //             ),
+  //             subtitle: Text('Học viên sẽ được làm lại từ đầu'),
+  //           ),
+  //           const Divider(),
+  //           ListTile(
+  //             leading: const Icon(Icons.person, color: Colors.blue),
+  //             title: Text('Học viên: $hoTen'),
+  //           ),
+  //           ListTile(
+  //             leading: const Icon(Icons.score, color: Colors.green),
+  //             title: Text('Điểm hiện tại: ${item['diemSo'] ?? 'Chưa có'}'),
+  //           ),
+  //           const Divider(),
+  //           Padding(
+  //             padding: const EdgeInsets.all(16),
+  //             child: Row(
+  //               children: [
+  //                 Expanded(
+  //                   child: OutlinedButton(
+  //                     onPressed: () => Navigator.pop(context),
+  //                     style: OutlinedButton.styleFrom(
+  //                       padding: const EdgeInsets.symmetric(vertical: 12),
+  //                     ),
+  //                     child: const Text('Hủy'),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 12),
+  //                 Expanded(
+  //                   child: ElevatedButton(
+  //                     onPressed: () {
+  //                       Navigator.pop(context);
+  //                       moLaiBaiKT(idHocVien, hoTen);
+  //                     },
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: Colors.orange,
+  //                       foregroundColor: Colors.white,
+  //                       padding: const EdgeInsets.symmetric(vertical: 12),
+  //                     ),
+  //                     child: const Text('Xác nhận mở lại'),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Color getColor(diem) {
     if (diem == null) return Colors.grey;

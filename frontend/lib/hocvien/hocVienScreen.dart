@@ -6,6 +6,7 @@ import 'package:frontend/hocvien/menuUI/hocVienMenuBar.dart';
 import 'package:frontend/api.dart';
 import 'package:frontend/hocvien/lophoc/chiTietLopHocHV.dart';
 import 'package:frontend/profileScreen.dart';
+import 'aiScreen.dart';
 
 class HocVienScreen extends StatefulWidget {
   const HocVienScreen({super.key});
@@ -259,6 +260,7 @@ class _HocVienScreenState extends State<HocVienScreen> {
           ),
         ],
       ),
+
       drawer: Hocvienmenubar(hoTen: hoTen, vaiTro: vaiTro),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -349,10 +351,31 @@ class _HocVienScreenState extends State<HocVienScreen> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showJoinDialog,
-        child: const Icon(Icons.add, color: Colors.white),
-        backgroundColor: Colors.blue,
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _showJoinDialog,
+      //   child: const Icon(Icons.add, color: Colors.white),
+      //   backgroundColor: Colors.blue,
+      // ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Aiscreen()),
+              );
+            },
+            child: const Icon(Icons.question_mark, color: Colors.white),
+            backgroundColor: Colors.blue,
+          ),
+          SizedBox(height: 7,),
+          FloatingActionButton(
+            onPressed: _showJoinDialog,
+            child: const Icon(Icons.add, color: Colors.white),
+            backgroundColor: Colors.blue,
+          ),
+        ],
       ),
     );
   }
