@@ -12,7 +12,7 @@ router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
         if (isNaN(idKhoaHoc)) {
             return res.status(400).json({
                 success: false,
-                error: "ID khóa học không hợp lệ"
+                error: "ID lớp học không hợp lệ"
             });
         }
         const lophoc = await prisma.khoahoc.findFirst({
@@ -647,7 +647,7 @@ router.put('/molaibaiKT/:idQuiz/:idHocVien', checkGiangVien, async (req, res) =>
         if (quiz.khoahoc.idGiangVien !== idGiangVien) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn không phải giảng viên của khóa học này"
+                message: "Bạn không phải giảng viên của lớp học này"
             })
         }
         const now = new Date()
@@ -667,7 +667,7 @@ router.put('/molaibaiKT/:idQuiz/:idHocVien', checkGiangVien, async (req, res) =>
         if (!dangKy) {
             return res.status(404).json({
                 success: false,
-                message: "Học viên không thuộc khóa học này"
+                message: "Học viên không thuộc lớp học này"
             })
         }
         const daLam = await prisma.quiz_results.findUnique({

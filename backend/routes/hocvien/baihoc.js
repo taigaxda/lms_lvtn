@@ -70,7 +70,7 @@ router.get("/:idKhoaHoc", checkHocVien, async (req, res) => {
     if (!dangKy) {
       return res.status(403).json({
         success: false,
-        message: "Bạn chưa đăng ký khóa học này",
+        message: "Bạn chưa đăng ký lớp học này",
       });
     }
 
@@ -142,7 +142,7 @@ router.post("/hoc-bai", checkHocVien, async (req, res) => {
     if (!dangKy) {
       return res.status(403).json({
         success: false,
-        message: "Bạn chưa đăng ký khóa học này",
+        message: "Bạn chưa đăng ký lớp học này",
       });
     }
 

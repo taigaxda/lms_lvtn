@@ -28,7 +28,7 @@ router.post('/thamgia', checkHocVien, async (req, res) => {
         if (!lopHoc.trangThai) {
             return res.status(400).json({
                 success: false,
-                message: "Lớp học đã bị khóa, không thể tham gia"
+                message: "Lớp học đã bị lớp, không thể tham gia"
             })
         }
         const daThamGia = await prisma.dangky_khoahoc.findFirst({
@@ -67,7 +67,7 @@ router.delete('/roilop', checkHocVien, async (req, res) => {
         if (!idKhoaHoc) {
             return res.status(400).json({
                 success: false,
-                message: "Thiếu id khóa học"
+                message: "Thiếu id lớp học"
             })
         }
         const daThamGia = await prisma.dangky_khoahoc.findFirst({
@@ -172,7 +172,7 @@ router.get('/:idKhoaHoc', checkHocVien, async (req, res) => {
         if(isNaN(idKhoaHoc)) {
             return res.status(400).json({
                 success: false,
-                message: "ID khóa học không hợp lệ"
+                message: "ID lớp học không hợp lệ"
             })
         }
         const daThamGia = await prisma.dangky_khoahoc.findFirst({

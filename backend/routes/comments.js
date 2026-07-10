@@ -414,7 +414,7 @@ router.delete('/:idComment', checkComment, async (req, res) => {
             return res.status(403).json({
                 success: false,
                 message: "Bạn không có quyền xóa comment này",
-                detail: "Chỉ người tạo hoặc giảng viên của khóa học mới có quyền xóa"
+                detail: "Chỉ người tạo hoặc giảng viên của lớp học mới có quyền xóa"
             });
         }
         const deletedRepliesCount = comment.replies.length

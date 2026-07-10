@@ -270,13 +270,13 @@ router.get('/:id', checkGiangVien, async (req, res) => {
     if (!lopHoc) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy khóa học"
+        message: "Không tìm thấy lớp học"
       })
     }
     if (lopHoc.idGiangVien !== idGiangVien) {
       return res.status(403).json({
         success: false,
-        message: "Bạn không có quyền xem chi tiết khóa học này"
+        message: "Bạn không có quyền xem chi tiết lớp học này"
       });
     }
     res.json({
@@ -355,13 +355,13 @@ router.delete('/:id', checkGiangVien, async (req, res) => {
     if (!khoahoc) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy khóa học"
+        message: "Không tìm thấy lớp học"
       })
     }
     if (khoahoc.idGiangVien !== idGiangVien) {
       return res.status(403).json({
         success: false,
-        message: "Bạn không có quyền xóa khóa học này"
+        message: "Bạn không có quyền xóa lớp học này"
       })
     }
 
@@ -416,13 +416,13 @@ router.put('/:id', checkGiangVien, async (req, res) => {
     if (khoahoc.idGiangVien !== idGiangVien) {
       return res.status(403).json({
         success: false,
-        message: "Bạn không có quyền chỉnh sửa khóa học này"
+        message: "Bạn không có quyền chỉnh sửa lớp học này"
       })
     }
     if (!khoahoc) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy khóa học"
+        message: "Không tìm thấy lớp học"
       })
     }
     const updatedLopHoc = await prisma.khoahoc.update({

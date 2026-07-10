@@ -308,7 +308,7 @@ router.get('/:id', checkAdmin, async (req, res) => {
         if (!lopHoc) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy khóa học"
+                message: "Không tìm thấy lớp học"
             })
         }
         res.json(lopHoc)
@@ -393,7 +393,7 @@ router.delete('/:id', checkAdmin, async (req, res) => {
         if (!khoahoc) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy khóa học"
+                message: "Không tìm thấy lớp học"
             })
         }
 
@@ -405,7 +405,7 @@ router.delete('/:id', checkAdmin, async (req, res) => {
             return res.status(400).json({
                 success: false,
                 needConfirm: true,
-                message: `Khóa học có ${soLuongDangKy} học viên. Bạn có chắc muốn xóa?`
+                message: `Lớp học có ${soLuongDangKy} học viên. Bạn có chắc muốn xóa?`
             })
         }
 
@@ -420,7 +420,7 @@ router.delete('/:id', checkAdmin, async (req, res) => {
 
         res.json({
             success: true,
-            message: "Đã xóa khóa học và toàn bộ dữ liệu liên quan"
+            message: "Đã xóa lớp học và toàn bộ dữ liệu liên quan"
         })
 
     } catch (error) {
@@ -456,7 +456,7 @@ router.put('/:id', checkAdmin, async (req, res) => {
         if (!khoahoc) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy khóa học"
+                message: "Không tìm thấy lớp học"
             })
         }
         const updatedLopHoc = await prisma.khoahoc.update({

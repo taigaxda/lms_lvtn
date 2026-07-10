@@ -17,7 +17,7 @@ router.get('/dsquiz/:idKhoaHoc', checkHocVien, async (req, res) => {
         if (!dangKy) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn chưa đăng ký khóa học"
+                message: "Bạn chưa đăng ký lớp học"
             });
         }
         const quizzes = await prisma.quizzes.findMany({
@@ -265,7 +265,7 @@ router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
         if (!dangKy) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn chưa đăng ký khóa học"
+                message: "Bạn chưa đăng ký lớp học"
             });
         }
         

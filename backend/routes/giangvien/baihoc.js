@@ -26,7 +26,7 @@ router.post('/', checkGiangVien, async (req, res) => {
             return res.status(400).json({ success: false, message: "Thiếu tên bài học!" });
         }
         if (!idKhoaHoc) {
-            return res.status(400).json({ success: false, message: "Thiếu ID khóa học!" });
+            return res.status(400).json({ success: false, message: "Thiếu ID lớp học!" });
         }
         const khoaHoc = await prisma.khoahoc.findUnique({
             where: { 
@@ -39,14 +39,14 @@ router.post('/', checkGiangVien, async (req, res) => {
         if (!khoaHoc) {
             return res.status(404).json({
                 success: false,
-                message: "Không tìm thấy khóa học!"
+                message: "Không tìm thấy lớp học!"
             })
         }
 
         if (khoaHoc.idGiangVien !== idNguoiDang) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn không phải là giảng viên của khóa học này!"
+                message: "Bạn không phải là giảng viên của lớp học này!"
             })
         }
         let thuTuCuoi = thuTu ? parseInt(thuTu) : null
