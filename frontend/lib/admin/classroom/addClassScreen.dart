@@ -141,7 +141,7 @@ class _AddClassScreenState extends State<AddClassScreen> {
           children: [
             TextField(
               controller: tenController,
-              decoration: const InputDecoration(labelText: 'Tên khóa học'),
+              decoration: const InputDecoration(labelText: 'Tên lớp học'),
             ),
             TextField(
               controller: moTaController,

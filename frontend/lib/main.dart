@@ -79,9 +79,7 @@ class MyHomePage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.only(top: 80, bottom: 50),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.deepPurple, Colors.blue],
-                ),
+                color: Colors.blueAccent,
                 borderRadius: BorderRadius.vertical(
                   bottom: Radius.circular(30),
                 ),
@@ -91,7 +89,7 @@ class MyHomePage extends StatelessWidget {
                   Icon(Icons.school, size: 70, color: Colors.white),
                   SizedBox(height: 16),
                   Text(
-                    "LMS System",
+                    "Quản lý học tập",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -114,7 +112,8 @@ class MyHomePage extends StatelessWidget {
               child: Column(
                 children: const [
                   Text(
-                    "Chào mừng bạn đến với LMS",
+                    "Chào mừng bạn đến với hệ thống quản lý học tập",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -122,8 +121,8 @@ class MyHomePage extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    "Quản lý khóa học, học viên và giảng viên một cách dễ dàng. "
-                    "Truy cập bài học, làm quiz và theo dõi tiến độ học tập.",
+                    "Quản lý lớp học, học viên và giảng viên một cách dễ dàng. "
+                    "Truy cập bài học, làm bài tập, làm bài kiểm tra và theo dõi tiến độ học tập.",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),
@@ -137,9 +136,9 @@ class MyHomePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildFeature(Icons.menu_book, "Quản lý khóa học"),
+                  _buildFeature(Icons.menu_book, "Quản lý lớp học"),
                   _buildFeature(Icons.people, "Quản lý học viên"),
-                  _buildFeature(Icons.quiz, "Học tập, làm bài kiểm tra"),
+                  _buildFeature(Icons.quiz, "Học tập, làm bài tập và bài kiểm tra"),
                 ],
               ),
             ),
@@ -153,7 +152,7 @@ class MyHomePage extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: Colors.blueAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -189,7 +188,7 @@ class MyHomePage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.deepPurple),
+          Icon(icon, color: Colors.blueAccent),
           const SizedBox(width: 12),
           Text(text),
         ],
