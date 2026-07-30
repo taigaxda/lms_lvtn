@@ -1,8 +1,8 @@
 import express from 'express'
 import { prisma } from '../../prisma/client.js'
 import { checkHocVien } from '../middleware.js'
-import { askAI, getDailyTasks, getSuggestedQuestions } from '../aiHelper.js'
-
+//import { askAI, getDailyTasks, getSuggestedQuestions } from '../aiHelper.js'
+import { askAI, getSuggestedQuestions } from '../aiHelper.js'
 const router = express.Router()
 
 async function lopHocCuaHocVien(idNguoiDung) {
