@@ -130,14 +130,14 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
   Future<void> _connectSocket() async {
     if (userId == 0) return;
 
-    print('🔍 [UI] Connecting socket...');
+    print('[UI] Connecting socket...');
 
     if (!SocketService.isConnected()) {
-      print('🔍 [UI] Socket not connected, calling connect()...');
+      print('[UI] Socket not connected, calling connect()...');
       SocketService.connect();
     }
 
-    // ✅ Thêm log all events
+    //Thêm log all events
     SocketService.logAllEvents();
 
     _waitForSocketConnection();
@@ -150,7 +150,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     while (attempts < maxAttempts) {
       if (SocketService.isConnected()) {
         _isSocketConnected = true;
-        print('✅ Socket connected, joining group ${widget.groupId}...');
+        print('Socket connected, joining group ${widget.groupId}...');
 
         SocketService.joinGroup(widget.groupId);
 
@@ -169,11 +169,11 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
       }
 
       attempts++;
-      print('⏳ Waiting for socket... ($attempts/$maxAttempts)');
+      print('Waiting for socket... ($attempts/$maxAttempts)');
       await Future.delayed(const Duration(milliseconds: 500));
     }
 
-    print('❌ Cannot connect to socket after $maxAttempts attempts');
+    print('Cannot connect to socket after $maxAttempts attempts');
     setState(() {
       _isSocketConnected = false;
     });
@@ -181,7 +181,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
 
   void _checkAndReconnectSocket() {
     if (!_isSocketConnected && userId != 0) {
-      print('🔄 Reconnecting socket...');
+      print('Reconnecting socket...');
       _connectSocket();
     }
   }
@@ -327,15 +327,15 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     }
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 100 &&
-        !isLoading &&
-        !isLoadingMore &&
-        hasMore) {
-      _loadMessages(loadMore: true);
-    }
-  }
+  // void _onScroll() {
+  //   if (_scrollController.position.pixels >=
+  //           _scrollController.position.maxScrollExtent - 100 &&
+  //       !isLoading &&
+  //       !isLoadingMore &&
+  //       hasMore) {
+  //     _loadMessages(loadMore: true);
+  //   }
+  // }
 
   Future<void> _sendMessage({String? text, File? file, PlatformFile? platformFile}) async {
     final messageText = text ?? _messageController.text.trim();
@@ -962,7 +962,8 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
     if (time == null) return '';
     final d = DateTime.tryParse(time);
     if (d == null) return '';
-    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    // return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} - ${d.day}/${d.month}/${d.year}';
   }
 
   // ==================== BUILD ====================

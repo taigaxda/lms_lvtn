@@ -754,7 +754,7 @@ class _ChiTietTopicScreenState extends State<ChiTietTopicScreen>
     if (time == null) return '';
     final d = DateTime.tryParse(time);
     if (d == null) return '';
-    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} - ${d.day}/${d.month}/${d.year}';
   }
 
   // ==================== BUILD ====================
