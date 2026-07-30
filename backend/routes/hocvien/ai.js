@@ -197,65 +197,65 @@ router.post('/ask', checkHocVien, async (req, res) => {
     }
 })
 
-router.get('/daily-tasks', checkHocVien, async (req, res) => {
-    try {
-        const idNguoiDung = req.user.idNguoiDung
-        const dsIdKhoaHoc = await lopHocCuaHocVien(idNguoiDung)
-        const homNay = new Date()
-        const threeDaysLater = new Date(homNay.getTime() + 3 * 24 * 60 * 60 * 1000)
+// router.get('/daily-tasks', checkHocVien, async (req, res) => {
+//     try {
+//         const idNguoiDung = req.user.idNguoiDung
+//         const dsIdKhoaHoc = await lopHocCuaHocVien(idNguoiDung)
+//         const homNay = new Date()
+//         const threeDaysLater = new Date(homNay.getTime() + 3 * 24 * 60 * 60 * 1000)
 
-        const [baiHocChuaHoc, baiTapChuaNop, quizChuaLam, thongBaoMoi] = await Promise.all([
-            prisma.progress.count({
-                where: {
-                    idNguoiDung,
-                    trangThai: { in: ['chua_hoc', 'dang_hoc'] }
-                }
-            }),
-            prisma.assignments.count({
-                where: {
-                    khoahoc: { idKhoaHoc: { in: dsIdKhoaHoc } },
-                    hanNop: { gte: homNay, lte: threeDaysLater }
-                }
-            }),
-            prisma.quizzes.count({
-                where: {
-                    khoahoc: { idKhoaHoc: { in: dsIdKhoaHoc } },
-                    ngayDenHan: { gte: homNay },
-                    results: { none: { idNguoiDung: idNguoiDung } }
-                }
-            }),
-            prisma.announcements.count({
-                where: {
-                    idKhoaHoc: { in: dsIdKhoaHoc },
-                    ngayTao: { gte: new Date(homNay.getTime() - 7 * 24 * 60 * 60 * 1000) }
-                }
-            })
-        ])
+//         const [baiHocChuaHoc, baiTapChuaNop, quizChuaLam, thongBaoMoi] = await Promise.all([
+//             prisma.progress.count({
+//                 where: {
+//                     idNguoiDung,
+//                     trangThai: { in: ['chua_hoc', 'dang_hoc'] }
+//                 }
+//             }),
+//             prisma.assignments.count({
+//                 where: {
+//                     khoahoc: { idKhoaHoc: { in: dsIdKhoaHoc } },
+//                     hanNop: { gte: homNay, lte: threeDaysLater }
+//                 }
+//             }),
+//             prisma.quizzes.count({
+//                 where: {
+//                     khoahoc: { idKhoaHoc: { in: dsIdKhoaHoc } },
+//                     ngayDenHan: { gte: homNay },
+//                     results: { none: { idNguoiDung: idNguoiDung } }
+//                 }
+//             }),
+//             prisma.announcements.count({
+//                 where: {
+//                     idKhoaHoc: { in: dsIdKhoaHoc },
+//                     ngayTao: { gte: new Date(homNay.getTime() - 7 * 24 * 60 * 60 * 1000) }
+//                 }
+//             })
+//         ])
 
-        const studentData = {
-            baiHocChuaHoc: baiHocChuaHoc,
-            baiTapChuaNop: baiTapChuaNop,
-            quizChuaLam: quizChuaLam,
-            thongBaoMoi: thongBaoMoi
-        }
+//         const studentData = {
+//             baiHocChuaHoc: baiHocChuaHoc,
+//             baiTapChuaNop: baiTapChuaNop,
+//             quizChuaLam: quizChuaLam,
+//             thongBaoMoi: thongBaoMoi
+//         }
 
-        const suggestion = await getDailyTasks(studentData)
+//         const suggestion = await getDailyTasks(studentData)
 
-        res.json({
-            success: true,
-            data: {
-                suggestion: suggestion,
-                summary: studentData
-            }
-        })
+//         res.json({
+//             success: true,
+//             data: {
+//                 suggestion: suggestion,
+//                 summary: studentData
+//             }
+//         })
 
-    } catch (error) {
-        console.error('Lỗi đề xuất công việc:', error)
-        res.status(500).json({
-            success: false,
-            message: error.message
-        })
-    }
-})
+//     } catch (error) {
+//         console.error('Lỗi đề xuất công việc:', error)
+//         res.status(500).json({
+//             success: false,
+//             message: error.message
+//         })
+//     }
+// })
 
 export default router

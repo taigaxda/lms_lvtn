@@ -86,35 +86,35 @@ export async function askAI(question, context) {
     }
 }
 
-export async function getDailyTasks(studentData) {
-    try {
-        const messages = [
-            {
-                role: "system",
-                content: "Bạn là trợ lý học tập, đề xuất công việc cần làm."
-            },
-            {
-                role: "user",
-                content: `
-                DỮ LIỆU HỌC VIÊN:
-                - Bài học chưa hoàn thành: ${studentData.baiHocChuaHoc}
-                - Bài tập chưa nộp: ${studentData.baiTapChuaNop}
-                - Quiz chưa làm: ${studentData.quizChuaLam}
-                - Thông báo mới: ${studentData.thongBaoMoi}
+// export async function getDailyTasks(studentData) {
+//     try {
+//         const messages = [
+//             {
+//                 role: "system",
+//                 content: "Bạn là trợ lý học tập, đề xuất công việc cần làm."
+//             },
+//             {
+//                 role: "user",
+//                 content: `
+//                 DỮ LIỆU HỌC VIÊN:
+//                 - Bài học chưa hoàn thành: ${studentData.baiHocChuaHoc}
+//                 - Bài tập chưa nộp: ${studentData.baiTapChuaNop}
+//                 - Quiz chưa làm: ${studentData.quizChuaLam}
+//                 - Thông báo mới: ${studentData.thongBaoMoi}
 
-                Đề xuất 3-5 công việc ưu tiên nhất hôm nay.
-                `
-            }
-        ];
+//                 Đề xuất 3-5 công việc ưu tiên nhất hôm nay.
+//                 `
+//             }
+//         ];
 
-        const response = await callOpenRouter(messages);
-        return response;
+//         const response = await callOpenRouter(messages);
+//         return response;
 
-    } catch (error) {
-        console.error("Lỗi đề xuất:", error);
-        return "Không thể đề xuất công việc hôm nay.";
-    }
-}
+//     } catch (error) {
+//         console.error("Lỗi đề xuất:", error);
+//         return "Không thể đề xuất công việc hôm nay.";
+//     }
+// }
 
 export async function getSuggestedQuestions(context) {
     try {
@@ -124,7 +124,7 @@ export async function getSuggestedQuestions(context) {
                 content: `Bạn là trợ lý AI. Tạo 5 câu hỏi gợi ý dựa trên dữ liệu học viên.
                 
                 YÊU CẦU:
-                - Câu hỏi cụ thể, dưới 50 ký tự
+                - Câu hỏi cụ thể, dưới 50 ký tự và chỉ dùng Tiếng Việt
                 - CHỈ TRẢ VỀ JSON: [{"question": "câu hỏi 1"}, {"question": "câu hỏi 2"}]
                 - KHÔNG CÓ GÌ KHÁC NGOÀI JSON`
             },

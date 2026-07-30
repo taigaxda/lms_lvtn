@@ -333,7 +333,7 @@ class _ChuaHTHocVienScreenState extends State<ChuaHTHocVienScreen>
     if (baiTapChuaNop.isEmpty) {
       return _buildEmpty(
         "Không có bài tập nào chưa nộp!",
-        subText: "Bạn đã hoàn thành tất cả bài tập 🎉",
+        subText: "Bạn đã hoàn thành tất cả bài tập",
       );
     }
 

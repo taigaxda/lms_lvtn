@@ -489,10 +489,10 @@ class _DashboardAdminScreenState extends State<DashboardAdminScreen> {
     );
   }
 
-  String _formatDate(String? date) {
-    if (date == null) return "";
-    final d = DateTime.tryParse(date);
-    if (d == null) return "";
-    return "${d.day}/${d.month}/${d.year}";
-  }
+  // String _formatDate(String? date) {
+  //   if (date == null) return "";
+  //   final d = DateTime.tryParse(date);
+  //   if (d == null) return "";
+  //   return "${d.day}/${d.month}/${d.year}";
+  // }
 }
