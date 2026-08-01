@@ -51,7 +51,7 @@ router.post('/thamgia', checkHocVien, async (req, res) => {
         })
         res.status(201).json({
             success: true,
-            message: "Đăng ký lớp học thành công",
+            message: "Tham gia lớp học thành công",
             data: thamGia
         })
     }

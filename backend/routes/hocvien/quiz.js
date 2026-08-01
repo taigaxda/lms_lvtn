@@ -17,7 +17,7 @@ router.get('/dsquiz/:idKhoaHoc', checkHocVien, async (req, res) => {
         if (!dangKy) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn chưa đăng ký lớp học"
+                message: "Bạn chưa tham gia lớp học"
             });
         }
         const quizzes = await prisma.quizzes.findMany({
@@ -108,7 +108,7 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
         if (!dangKy) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn chưa đăng ký lớp học"
+                message: "Bạn chưa tham gia lớp học"
             });
         }
         const daLam = await prisma.quiz_results.findUnique({
@@ -161,7 +161,6 @@ router.get('/baikiemtra/:idQuiz', checkHocVien, async (req, res) => {
 router.get('/chualam', checkHocVien, async (req, res) => {
     try {
         const idNguoiDung = req.user.idNguoiDung;
-
         const data = await prisma.khoahoc.findMany({
             where: {
                 dangky_khoahoc: {
@@ -265,7 +264,7 @@ router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
         if (!dangKy) {
             return res.status(403).json({
                 success: false,
-                message: "Bạn chưa đăng ký lớp học"
+                message: "Bạn chưa tham gia lớp học"
             });
         }
         
