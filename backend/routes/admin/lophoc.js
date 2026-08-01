@@ -114,8 +114,20 @@ router.get('/dashboard', checkAdmin, async (req, res) => {
       totalGrades
     ] = await Promise.all([
       prisma.nguoidung.count(),
-      prisma.nguoidung.count({ where: { vaiTro: 'hocvien' } }),
-      prisma.nguoidung.count({ where: { vaiTro: 'giangvien' } }),
+      prisma.nguoidung.count(
+        { 
+            where: { 
+                vaiTro: 'hocvien' 
+            } 
+        }
+    ),
+      prisma.nguoidung.count(
+        { 
+            where: { 
+                vaiTro: 'giangvien' 
+            } 
+        }
+    ),
       prisma.khoahoc.count(),
       prisma.dangky_khoahoc.count(),
       prisma.baihoc.count(),
