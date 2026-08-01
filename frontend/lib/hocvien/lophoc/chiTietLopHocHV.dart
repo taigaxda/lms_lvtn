@@ -67,6 +67,7 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
 
     if (result == true) {
       await loadAllData();
+      setState(() {});
     }
   }
 

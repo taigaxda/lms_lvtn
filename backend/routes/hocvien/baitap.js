@@ -173,7 +173,7 @@ router.post('/:idAssignment/nopbai', checkHocVien, upload.single('fileNop'), asy
         if (!baiTap) {
             return res.status(404).json({
                 success: false,
-                message: "Bài tập khôn còn tồn tại"
+                message: "Bài tập không còn tồn tại"
             })
         }
         if (baiTap.hanNop && new Date() > baiTap.hanNop) {
