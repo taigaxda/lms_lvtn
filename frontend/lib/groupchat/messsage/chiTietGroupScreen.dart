@@ -280,6 +280,7 @@ class _ChitietgroupscreenState extends State<Chitietgroupscreen>
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        //chuyen doi du lieu json thanh danh sach cac map
         final newMessages = List<Map<String, dynamic>>.from(data['data'] ?? []);
         final pagination = data['pagination'];
 

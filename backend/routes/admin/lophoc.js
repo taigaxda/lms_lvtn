@@ -359,22 +359,25 @@ router.post('/', checkAdmin, async (req, res) => {
         tenKhoaHoc = tenKhoaHoc ? tenKhoaHoc.trim() : undefined
         moTa = moTa ? moTa.trim() : undefined
         danhMuc = danhMuc ? danhMuc.trim() : undefined
-        if(!tenKhoaHoc || !moTa || !danhMuc || isNaN(idGiangVien)){
+        if(!tenKhoaHoc || !moTa || !danhMuc){
             return res.status(400).json({
                 success: false,
                 message: "Vui lòng điền đầy đủ thông tin"
             })
         }
-        const giangVien = await prisma.nguoidung.findUnique({
-            where: { idNguoiDung: idGiangVien }
-        });
-
-        if (!giangVien || giangVien.vaiTro !== "giangvien") {
-            return res.status(400).json({
-                success: false,
-                message: "Giảng viên không hợp lệ"
+        if(idGiangVien){
+            const giangVien = await prisma.nguoidung.findUnique({
+                where: { idNguoiDung: idGiangVien }
             });
+
+            if (!giangVien || giangVien.vaiTro !== "giangvien") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Giảng viên không hợp lệ"
+                });
+            }
         }
+        
         const codeLopHoc = await taoCodeUnique()
         const newLopHoc = await prisma.khoahoc.create({
             data: {
@@ -383,7 +386,7 @@ router.post('/', checkAdmin, async (req, res) => {
                 danhMuc,
                 code: codeLopHoc,
                 trangThai: true,
-                idGiangVien
+                idGiangVien: idGiangVien ? parseInt(idGiangVien) : null
             }
         })
         res.json(newLopHoc)
@@ -447,20 +450,22 @@ router.put('/:id', checkAdmin, async (req, res) => {
         tenKhoaHoc = tenKhoaHoc ? tenKhoaHoc.trim() : undefined
         moTa = moTa ? moTa.trim() : undefined
         danhMuc = danhMuc ? danhMuc.trim() : undefined
-        if(!tenKhoaHoc || !moTa || !danhMuc || isNaN(idGiangVien)){
+        if(!tenKhoaHoc || !moTa || !danhMuc){
             return res.status(400).json({
                 success: false,
                 message: "Vui lòng điền đầy đủ thông tin"
             })
         }
-        const giangVien = await prisma.nguoidung.findUnique({
-            where: { idNguoiDung: idGiangVien }
-        });
-         if (!giangVien || giangVien.vaiTro !== "giangvien") {
-            return res.status(400).json({
-                success: false,
-                message: "Giảng viên không hợp lệ"
+        if(idGiangVien){
+            const giangVien = await prisma.nguoidung.findUnique({
+                where: { idNguoiDung: idGiangVien }
             });
+            if (!giangVien || giangVien.vaiTro !== "giangvien") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Giảng viên không hợp lệ"
+                });
+            }
         }
         const khoahoc = await prisma.khoahoc.findUnique({
             where: { idKhoaHoc: id }
@@ -477,7 +482,7 @@ router.put('/:id', checkAdmin, async (req, res) => {
                 tenKhoaHoc,
                 moTa,
                 danhMuc,
-                idGiangVien,
+                idGiangVien: idGiangVien ? parseInt(idGiangVien) : null,
                 trangThai
             }
         })

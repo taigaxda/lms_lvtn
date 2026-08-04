@@ -46,12 +46,12 @@ class _AddClassScreenState extends State<AddClassScreen> {
     }
   }
   Future<void> addClass() async {
-    if (selectedGiangVienId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vui lòng chọn giảng viên")),
-      );
-      return;
-    }
+    // if (selectedGiangVienId == null) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text("Vui lòng chọn giảng viên")),
+    //   );
+    //   return;
+    // }
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
@@ -81,12 +81,12 @@ class _AddClassScreenState extends State<AddClassScreen> {
     }
   }
   Future<void> updateClass() async {
-    if (selectedGiangVienId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vui lòng chọn giảng viên")),
-      );
-      return;
-    }
+    // if (selectedGiangVienId == null) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(content: Text("Vui lòng chọn giảng viên")),
+    //   );
+    //   return;
+    // }
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");

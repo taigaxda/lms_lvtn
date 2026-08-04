@@ -1,6 +1,6 @@
 import express from 'express'
 import { prisma } from './prisma/client.js'
-import { count } from 'console'
+import { count, group } from 'console'
 
 const router = express.Router()
 
@@ -9,25 +9,37 @@ router.get('/', async (req, res) => {
 })
 
 router.get('/lopMax', async (req, res) => {
-    const lopDongNhat = await prisma.khoahoc.findMany({
-        take: 1,
+    const maxL = await prisma.dangky_khoahoc.groupBy({
+        by: ['idKhoaHoc'],
+        _count:{
+            idDangKy: true
+        },
         orderBy: {
-            dangky_khoahoc: {
-                _count: 'desc'
+            _count: {
+                idDangKy: 'desc'
             }
         },
-        select: {
-            _count: {
-                select: {
+        take: 1
+    })
+    const max = maxL[0]._count.idDangKy
+    const lopDongNhat = await prisma.khoahoc.findMany({
+        where:{
+            dangky_khoahoc:{
+                some:{}
+            }
+        },
+        select:{
+            tenKhoaHoc: true,
+            _count:{
+                select:{
                     dangky_khoahoc: true
                 }
-            },
-            nguoidung: true
+            }
         }
     })
+    const kq = lopDongNhat.filter(lop=>lop._count.dangky_khoahoc == max)
     res.json({
-        success: true,
-        data: lopDongNhat
+        kq
     })
 })
 
@@ -81,27 +93,46 @@ router.get('/tinnhan/:idGroup', async (req, res) => {
         },
         orderBy: {
             _count: {
-                idMessage: 'asc'
+                idMessage: 'desc'
             }
         },
         take: 1
     })
-    const ttnd = await prisma.nguoidung.findUnique({
+    const max = tinNhan[0]._count.idMessage
+    //relation xài some
+    const ttnd = await prisma.nguoidung.findMany({
         where: {
-            idNguoiDung: tinNhan[0].idNguoiDung
+            group_members:{
+                some:{                
+                    idGroup: idGroup
+                }
+            }
         },
         select: {
             hoTen: true,
             _count: {
                 select: {
-                    messages: true
+                    messages:{
+                        where:{
+                            idGroup: idGroup
+                        }
+                    }
+                }
+            },
+            group_members: {
+                where:{
+                    idGroup: idGroup
+                },
+                select:{
+                    group: true
                 }
             }
         }
     })
+    const rs = ttnd.filter(t=>t._count.messages === max)
     res.json({
         success: true,
-        data: ttnd,
+        data: rs,
     })
 })
 router.get('/top-enrollment-all', async (req, res) => {
@@ -411,6 +442,65 @@ router.get('/nguoidungchuathamgianhom',async(req,res)=>{
         data: dsNd
     })
 })
+router.get('/diemMaxTatCaBaiKT',async(req,res)=>{
+    const dsBaiKT = await prisma.quizzes.findMany({
+        select:{
+            idQuiz: true,
+            tenQuiz: true,
+                khoahoc:{
+                    select:{
+                        tenKhoaHoc: true
+                    }
+                
+            }
+        }
+    })
+    const tongBaiKT = await prisma.quizzes.count()
+    const diemMaxTungBai = await prisma.quiz_results.groupBy({
+        by:['idQuiz'],
+        _max :{
+            diemSo: true
+        }
+    })
+    const kq =[]
+    for(const kt of dsBaiKT){
+        const diemMax =  diemMaxTungBai.find(d=>d.idQuiz==kt.idQuiz)
+        if (!diemMax || diemMax._max.diemSo === null) {
+                kq.push({
+                    idQuiz: kt.idQuiz,
+                    tenQuiz: kt.tenQuiz,
+                    khoahoc: kt.khoahoc,
+                    diemCaoNhat: null,
+                    thongTinNguoiDung: []
+                });
+                continue;
+            }
+        const thongTinNguoiDung = await prisma.quiz_results.findMany({
+            where:{
+                idQuiz: kt.idQuiz,
+                diemSo: diemMax._max.diemSo
+            },
+            select:{
+                diemSo: true,
+                nguoidung:{
+                    select:{
+                    hoTen: true
+                    }
 
+                },
+            }
+        })
+        kq.push({
+            ...kt,
+            diemCaoNhat: diemMax,
+            thongTinNguoiDung: thongTinNguoiDung
+        })
+    }
+   
+    
+    res.json({
+        data: kq
+    })
+})
 
 export default router
