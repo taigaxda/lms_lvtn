@@ -184,7 +184,8 @@ class _Baitapgvscreen extends State<Baitapgvscreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => Danhsachbainopgvscreen(
-                              submissions: item["submissions"] ?? [],
+                              // submissions: item["submissions"] ?? [],
+                              idAssignment: item["idAssignment"],
                               tieuDe: item["tieuDe"] ?? "",
                             ),
                           ),

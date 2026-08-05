@@ -33,7 +33,7 @@ export const uploadToCloudinary = async (file) => {
             publicId = originalName;
         }
 
-        console.log(`📤 Uploading ${file.originalname} as ${resourceType}`);
+        console.log(`Uploading ${file.originalname} as ${resourceType}`);
 
         const result = await cloudinary.uploader.upload(file.path, {
             resource_type: resourceType,
@@ -45,7 +45,7 @@ export const uploadToCloudinary = async (file) => {
     
         });
 
-        console.log(`✅ Uploaded: ${result.secure_url}`);
+        console.log(`Uploaded: ${result.secure_url}`);
         return result.secure_url;
 
     } catch (error) {

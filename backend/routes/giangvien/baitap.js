@@ -122,6 +122,7 @@ router.get('/dsbainop/:idAssignment', checkGiangVien, async (req, res) => {
                 hoTen: hv.nguoidung.hoTen,
                 email: hv.nguoidung.email,
                 daNop: sub ? true : false,
+                idSubmission: sub ? sub.idSubmission : null, 
                 fileNop: sub ? sub.fileNop : null,
                 noiDung: sub ? sub.noiDung : null,
                 ngayNop: sub ? sub.ngayNop : null,

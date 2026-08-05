@@ -503,4 +503,99 @@ router.get('/diemMaxTatCaBaiKT',async(req,res)=>{
     })
 })
 
+router.get('/tim-kiem1', async (req, res) => {
+    try {
+        const { danhMuc } = req.query;
+
+        if (!danhMuc || danhMuc.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Vui lòng nhập danh mục cần tìm"
+            });
+        }
+
+        const khoaHocs = await prisma.khoahoc.findMany({
+            where: {
+                danhMuc: {
+                    contains: danhMuc.trim(),
+                    mode: 'insensitive'
+                },
+                trangThai: true
+            },
+            include: {
+                nguoidung: {
+                    select: {
+                        hoTen: true,
+                        email: true
+                    }
+                },
+                _count: {
+                    select: {
+                        dangky_khoahoc: true
+                    }
+                }
+            },
+            orderBy: {
+                ngayTao: 'desc'
+            }
+        });
+
+        res.json({
+            success: true,
+            data: khoaHocs,
+            total: khoaHocs.length
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/tim-kiem2', async (req, res) => {
+    try {
+        let { danhMuc } = req.query;
+
+        if (!danhMuc) {
+            return res.status(400).json({
+                success: false,
+                message: "Vui lòng nhập danh mục cần tìm"
+            });
+        }
+
+        const danhSachDanhMuc = danhMuc.split(',').map(d => d.trim());
+
+        const khoaHocs = await prisma.khoahoc.findMany({
+            where: {
+                danhMuc: {
+                    in: danhSachDanhMuc,
+                    mode: 'insensitive'
+                },
+                trangThai: true
+            },
+            include: {
+                nguoidung: {
+                    select: {
+                        hoTen: true,
+                        email: true
+                    }
+                },
+                _count: {
+                    select: {
+                        dangky_khoahoc: true
+                    }
+                }
+            },
+            orderBy: {
+                ngayTao: 'desc'
+            }
+        });
+
+        res.json({
+            success: true,
+            data: khoaHocs,
+            total: khoaHocs.length
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 export default router
