@@ -242,6 +242,7 @@ class _ThemsuabaitapGVState extends State<Themsuabaitapgv> {
           style: const TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

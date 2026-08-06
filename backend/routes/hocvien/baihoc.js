@@ -53,6 +53,71 @@ router.get("/chuahoc", checkHocVien, async (req, res) => {
   }
 });
 
+// router.get("/:idKhoaHoc", checkHocVien, async (req, res) => {
+//   try {
+//     const idNguoiDung = req.user.idNguoiDung;
+//     const idKhoaHoc = parseInt(req.params.idKhoaHoc);
+
+//     const dangKy = await prisma.dangky_khoahoc.findUnique({
+//       where: {
+//         idNguoiDung_idKhoaHoc: {
+//           idNguoiDung,
+//           idKhoaHoc,
+//         },
+//       },
+//     });
+
+//     if (!dangKy) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Bạn chưa tham gia lớp học này",
+//       });
+//     }
+
+//     const baiHocList = await prisma.baihoc.findMany({
+//       where: { idKhoaHoc },
+//       orderBy: { thuTu: "asc" },
+//       include: {
+//         progress: {
+//           where: {
+//             idNguoiDung,
+//           },
+//           select: {
+//             trangThai: true,
+//             thoiGianHoc: true,
+//           },
+//         },
+//       },
+//     });
+
+//     const result = baiHocList.map((bh) => {
+//       const p = bh.progress[0];
+
+//       return {
+//         idBaiHoc: bh.idBaiHoc,
+//         tenBaiHoc: bh.tenBaiHoc,
+//         videoUrl: bh.videoUrl,
+//         taiLieuUrl: bh.taiLieuUrl,
+//         thuTu: bh.thuTu,
+
+//         trangThai: p?.trangThai || "chua_hoc",
+//         thoiGianHoc: p?.thoiGianHoc || 0,
+//       };
+//     });
+
+//     res.json({
+//       success: true,
+//       data: result,
+//     });
+//   } catch (error) {
+//     console.error("Lỗi lấy bài học:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Lỗi server",
+//     });
+//   }
+// });
+
 router.get("/:idKhoaHoc", checkHocVien, async (req, res) => {
   try {
     const idNguoiDung = req.user.idNguoiDung;
@@ -74,9 +139,38 @@ router.get("/:idKhoaHoc", checkHocVien, async (req, res) => {
       });
     }
 
-    const baiHocList = await prisma.baihoc.findMany({
-      where: { idKhoaHoc },
-      orderBy: { thuTu: "asc" },
+    const chuongs = await prisma.chuong.findMany({
+      where: {
+        idKhoaHoc: idKhoaHoc,
+      },
+      include: {
+        baihoc: {
+          include: {
+            progress: {
+              where: {
+                idNguoiDung,
+              },
+              select: {
+                trangThai: true,
+                thoiGianHoc: true,
+              },
+            },
+          },
+          orderBy: {
+            thuTu: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        thuTu: 'asc',
+      },
+    });
+
+    const baiHocKhongChuong = await prisma.baihoc.findMany({
+      where: {
+        idKhoaHoc: idKhoaHoc,
+        idChuong: null,
+      },
       include: {
         progress: {
           where: {
@@ -88,18 +182,41 @@ router.get("/:idKhoaHoc", checkHocVien, async (req, res) => {
           },
         },
       },
+      orderBy: {
+        thuTu: 'asc',
+      },
     });
 
-    const result = baiHocList.map((bh) => {
-      const p = bh.progress[0];
+    const formattedChuongs = chuongs.map((chuong) => {
+      const baiHocs = chuong.baihoc.map((bh) => {
+        const p = bh.progress[0];
+        return {
+          idBaiHoc: bh.idBaiHoc,
+          tenBaiHoc: bh.tenBaiHoc,
+          videoUrl: bh.videoUrl,
+          taiLieuUrl: bh.taiLieuUrl,
+          thuTu: bh.thuTu,
+          trangThai: p?.trangThai || "chua_hoc",
+          thoiGianHoc: p?.thoiGianHoc || 0,
+        };
+      });
 
+      return {
+        idChuong: chuong.idChuong,
+        tenChuong: chuong.tenChuong,
+        thuTu: chuong.thuTu,
+        baiHocs: baiHocs,
+      };
+    });
+
+    const formattedBaiKhongChuong = baiHocKhongChuong.map((bh) => {
+      const p = bh.progress[0];
       return {
         idBaiHoc: bh.idBaiHoc,
         tenBaiHoc: bh.tenBaiHoc,
         videoUrl: bh.videoUrl,
         taiLieuUrl: bh.taiLieuUrl,
         thuTu: bh.thuTu,
-
         trangThai: p?.trangThai || "chua_hoc",
         thoiGianHoc: p?.thoiGianHoc || 0,
       };
@@ -107,7 +224,10 @@ router.get("/:idKhoaHoc", checkHocVien, async (req, res) => {
 
     res.json({
       success: true,
-      data: result,
+      data: {
+        chuongs: formattedChuongs,
+        baiHocKhongChuong: formattedBaiKhongChuong,
+      },
     });
   } catch (error) {
     console.error("Lỗi lấy bài học:", error);

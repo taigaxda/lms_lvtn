@@ -1,3 +1,391 @@
+// import 'dart:convert';
+// import 'package:flutter/material.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:frontend/api.dart';
+// import 'package:frontend/hocvien/menuUI/hocVienMenuBar.dart';
+// import 'package:frontend/hocvien/lophoc/hocBaiScreen.dart';
+// import 'package:frontend/hocvien/lophoc/danhSachBaiKTScreen.dart';
+// import 'baitap/dsBaiTapHVScreen.dart';
+// import '../thongbao/thongBaoHVScreen.dart';
+// import 'package:frontend/comments/commentsScreen.dart';
+// import 'package:frontend/groupchat/danhSachGroupScreen.dart';
+
+// class ChiTietLopHocHVScreen extends StatefulWidget {
+//   final int idKhoaHoc;
+
+//   const ChiTietLopHocHVScreen({super.key, required this.idKhoaHoc});
+
+//   @override
+//   State<ChiTietLopHocHVScreen> createState() => _ChiTietLopHocHVScreenState();
+// }
+
+// class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
+//   bool isLoading = true;
+//   Map<String, dynamic>? lopHoc;
+//   List baiHocs = [];
+//   int _selectedIndex = 0;
+
+//   final String apiUrl = '${ApiConfig.baseUrl}/hocvien';
+//   String hoTen = "";
+//   String vaiTro = "";
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     loadUserInfo();
+//     loadAllData();
+//   }
+
+//   Future<void> loadUserInfo() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     setState(() {
+//       hoTen = prefs.getString("hoTen") ?? "";
+//       vaiTro = prefs.getString("vaiTro") ?? "";
+//     });
+//   }
+
+//   Future<void> loadAllData() async {
+//     setState(() => isLoading = true);
+//     try {
+//       await Future.wait([loadChiTietLopHoc(), loadBaiHoc()]);
+//     } catch (e) {
+//       debugPrint("Lỗi: $e");
+//     } finally {
+//       setState(() => isLoading = false);
+//     }
+//   }
+
+//   Future<void> openHocBaiScreen(Map<String, dynamic> baiHoc) async {
+//     final result = await Navigator.push(
+//       context,
+//       MaterialPageRoute(
+//         builder: (_) =>
+//             HocBaiScreen(idKhoaHoc: widget.idKhoaHoc, baiHoc: baiHoc),
+//       ),
+//     );
+
+//     if (result == true) {
+//       await loadAllData();
+//       setState(() {});
+//     }
+//   }
+
+//   Future<void> loadChiTietLopHoc() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final token = prefs.getString("token");
+
+//     final res = await http.get(
+//       Uri.parse('$apiUrl/lophoc/${widget.idKhoaHoc}'),
+//       headers: {
+//         "Content-Type": "application/json",
+//         "Authorization": "Bearer $token",
+//       },
+//     );
+
+//     if (res.statusCode == 200) {
+//       lopHoc = json.decode(res.body)['data'];
+//     }
+//   }
+
+//   Future<void> loadBaiHoc() async {
+//     final prefs = await SharedPreferences.getInstance();
+//     final token = prefs.getString("token");
+
+//     final res = await http.get(
+//       Uri.parse('$apiUrl/baihoc/${widget.idKhoaHoc}'),
+//       headers: {
+//         "Content-Type": "application/json",
+//         "Authorization": "Bearer $token",
+//       },
+//     );
+
+//     if (res.statusCode == 200) {
+//       baiHocs = json.decode(res.body)['data'];
+//     }
+//   }
+
+//   Future<void> openDSBaiKiemTraScreen() async {
+//     await Navigator.push(
+//       context,
+//       MaterialPageRoute(
+//         builder: (_) => Danhsachbaiktscreen(idKhoaHoc: widget.idKhoaHoc),
+//       ),
+//     );
+//     await loadAllData();
+//   }
+
+//   Future<void> openDSBaiTapScreen() async {
+//     await Navigator.push(
+//       context,
+//       MaterialPageRoute(
+//         builder: (_) => Dsbaitaphvscreen(idKhoaHoc: widget.idKhoaHoc),
+//       ),
+//     );
+//     await loadAllData();
+//   }
+
+//   Future<void> openThongBaoScreen() async {
+//     await Navigator.push(
+//       context,
+//       MaterialPageRoute(
+//         builder: (_) => Thongbaohvscreen(idKhoaHoc: widget.idKhoaHoc),
+//       ),
+//     );
+//   }
+
+//   Future<void> openGroupScreen() async {
+//     await Navigator.push(
+//       context,
+//       MaterialPageRoute(
+//         builder: (_) =>
+//             Danhsachgroupscreen(idKhoaHoc: widget.idKhoaHoc, vaiTro: vaiTro),
+//       ),
+//     );
+//   }
+
+//   void _onItemTapped(int index) {
+//     setState(() {
+//       _selectedIndex = index;
+//     });
+
+//     switch (index) {
+//       case 0:
+//         break;
+//       case 1:
+//         openDSBaiKiemTraScreen();
+//         break;
+//       case 2:
+//         openDSBaiTapScreen();
+//         break;
+//       case 3:
+//         openThongBaoScreen();
+//         break;
+//       case 4:
+//         openGroupScreen();
+//         break;
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text(
+//           isLoading ? "Đang tải..." : (lopHoc?['tenKhoaHoc'] ?? "Chi tiết lớp"),
+//         ),
+//         backgroundColor: Colors.blue,
+//         foregroundColor: Colors.white,
+//       ),
+//       drawer: Hocvienmenubar(hoTen: hoTen, vaiTro: vaiTro),
+//       body: isLoading
+//           ? const Center(child: CircularProgressIndicator())
+//           : RefreshIndicator(onRefresh: loadAllData, child: _buildBody()),
+//       bottomNavigationBar: BottomNavigationBar(
+//         type: BottomNavigationBarType.fixed,
+//         backgroundColor: Colors.white,
+//         selectedItemColor: Colors.blue,
+//         unselectedItemColor: Colors.grey,
+//         currentIndex: _selectedIndex,
+//         onTap: _onItemTapped,
+//         items: const [
+//           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Chi tiết'),
+//           BottomNavigationBarItem(
+//             icon: Icon(Icons.quiz),
+//             label: 'Bài kiểm tra',
+//           ),
+//           BottomNavigationBarItem(
+//             icon: Icon(Icons.assignment),
+//             label: 'Bài tập',
+//           ),
+//           BottomNavigationBarItem(
+//             icon: Icon(Icons.notifications),
+//             label: 'Thông báo',
+//           ),
+//           BottomNavigationBarItem(
+//             icon: Icon(Icons.group),
+//             label: 'Nhóm chat',
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildBody() {
+//     return SingleChildScrollView(
+//       physics: const AlwaysScrollableScrollPhysics(),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           // Header
+//           Container(
+//             width: double.infinity,
+//             padding: const EdgeInsets.all(20),
+//             decoration: const BoxDecoration(
+//               color: Colors.blue,
+//               borderRadius: BorderRadius.only(
+//                 bottomLeft: Radius.circular(24),
+//                 bottomRight: Radius.circular(24),
+//               ),
+//             ),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text(
+//                   lopHoc?['tenKhoaHoc'] ?? "",
+//                   style: const TextStyle(
+//                     color: Colors.white,
+//                     fontSize: 24,
+//                     fontWeight: FontWeight.bold,
+//                   ),
+//                 ),
+//                 const SizedBox(height: 8),
+//                 Text(
+//                   "Giảng viên: ${lopHoc?['nguoidung']?['hoTen'] ?? ""}",
+//                   style: const TextStyle(color: Colors.white70),
+//                 ),
+//                 const SizedBox(height: 6),
+//                 Text(
+//                   "Danh mục: ${lopHoc?['danhMuc'] ?? ""}",
+//                   style: const TextStyle(color: Colors.white70),
+//                 ),
+//                 const SizedBox(height: 6),
+//                 Text(
+//                   "Học viên: $hoTen",
+//                   style: const TextStyle(color: Colors.white70),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           const Padding(
+//             padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+//             child: Text(
+//               "MÔ TẢ KHÓA HỌC",
+//               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+//             ),
+//           ),
+//           Padding(
+//             padding: const EdgeInsets.symmetric(horizontal: 16),
+//             child: Text(lopHoc?['moTa'] ?? "Không có mô tả"),
+//           ),
+//           const Padding(
+//             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+//             child: Text(
+//               "DANH SÁCH BÀI HỌC",
+//               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+//             ),
+//           ),
+//           Padding(
+//             padding: const EdgeInsets.symmetric(horizontal: 16),
+//             child: Text(
+//               "Tổng bài học: ${baiHocs.length}",
+//               style: const TextStyle(color: Colors.blue),
+//             ),
+//           ),
+
+//           ListView.builder(
+//             shrinkWrap: true,
+//             physics: const NeverScrollableScrollPhysics(),
+//             itemCount: baiHocs.length,
+//             itemBuilder: (context, index) {
+//               final b = baiHocs[index];
+
+//               final hasVideo = b['videoUrl'] != null && b['videoUrl'] != "";
+//               final status = b['trangThai'] ?? "chua_hoc";
+
+//               Color statusColor;
+//               String statusText;
+
+//               switch (status) {
+//                 case "hoan_thanh":
+//                   statusColor = Colors.green;
+//                   statusText = "Đã học";
+//                   break;
+//                 case "dang_hoc":
+//                   statusColor = Colors.orange;
+//                   statusText = "Đang học";
+//                   break;
+//                 default:
+//                   statusColor = Colors.grey;
+//                   statusText = "Chưa học";
+//               }
+
+//               return Card(
+//                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//                 shape: RoundedRectangleBorder(
+//                   borderRadius: BorderRadius.circular(12),
+//                 ),
+//                 child: ListTile(
+//                   leading: CircleAvatar(
+//                     backgroundColor: hasVideo
+//                         ? Colors.blue.withOpacity(0.1)
+//                         : Colors.orange.withOpacity(0.1),
+//                     child: Icon(
+//                       hasVideo ? Icons.play_circle : Icons.description,
+//                       color: hasVideo ? Colors.blue : Colors.orange,
+//                     ),
+//                   ),
+//                   title: Text(
+//                     b['tenBaiHoc'] ?? "",
+//                     style: const TextStyle(fontWeight: FontWeight.bold),
+//                   ),
+//                   subtitle: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       Text("Thứ tự: ${b['thuTu'] ?? index + 1}"),
+//                       const SizedBox(height: 4),
+//                       Container(
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 8,
+//                           vertical: 2,
+//                         ),
+//                         decoration: BoxDecoration(
+//                           color: statusColor.withOpacity(0.1),
+//                           borderRadius: BorderRadius.circular(8),
+//                         ),
+//                         child: Text(
+//                           statusText,
+//                           style: TextStyle(
+//                             color: statusColor,
+//                             fontSize: 12,
+//                             fontWeight: FontWeight.bold,
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                   trailing: Row(
+//                     mainAxisSize: MainAxisSize.min,
+//                     children: [
+//                       IconButton(
+//                         icon: const Icon(Icons.comment, color: Colors.blue),
+//                         onPressed: () {
+//                           Navigator.push(
+//                             context,
+//                             MaterialPageRoute(
+//                               builder: (_) =>
+//                                   Commentsscreen(idBaiHoc: b['idBaiHoc']),
+//                             ),
+//                           );
+//                         },
+//                         tooltip: 'Bình luận',
+//                       ),
+//                       const Icon(Icons.arrow_forward_ios, size: 16),
+//                     ],
+//                   ),
+//                   onTap: () {
+//                     openHocBaiScreen(b);
+//                   },
+//                 ),
+//               );
+//             },
+//           ),
+//           const SizedBox(height: 20),
+//         ],
+//       ),
+//     );
+//   }
+// }
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +411,8 @@ class ChiTietLopHocHVScreen extends StatefulWidget {
 class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
   bool isLoading = true;
   Map<String, dynamic>? lopHoc;
-  List baiHocs = [];
+  List<Map<String, dynamic>> chuongs = [];
+  List<Map<String, dynamic>> baiHocKhongChuong = [];
   int _selectedIndex = 0;
 
   final String apiUrl = '${ApiConfig.baseUrl}/hocvien';
@@ -101,7 +490,17 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
     );
 
     if (res.statusCode == 200) {
-      baiHocs = json.decode(res.body)['data'];
+      final data = json.decode(res.body)['data'];
+      setState(() {
+        final chuongData = data['chuongs'] ?? [];
+        if (chuongData is List) {
+          chuongs = chuongData.cast<Map<String, dynamic>>();
+        }
+        final baiKhongChuongData = data['baiHocKhongChuong'] ?? [];
+        if (baiKhongChuongData is List) {
+          baiHocKhongChuong = baiKhongChuongData.cast<Map<String, dynamic>>();
+        }
+      });
     }
   }
 
@@ -142,6 +541,18 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
             Danhsachgroupscreen(idKhoaHoc: widget.idKhoaHoc, vaiTro: vaiTro),
       ),
     );
+  }
+
+  int _totalBaiHoc() {
+    int total = 0;
+    for (var chuong in chuongs) {
+      final baiHocs = chuong['baiHocs'];
+      if (baiHocs is List) {
+        total += baiHocs.length;
+      }
+    }
+    total += baiHocKhongChuong.length;
+    return total;
   }
 
   void _onItemTapped(int index) {
@@ -212,12 +623,15 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
   }
 
   Widget _buildBody() {
+    final hasChuong = chuongs.isNotEmpty;
+    final hasBaiKhongChuong = baiHocKhongChuong.isNotEmpty;
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header (GIỮ NGUYÊN)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -257,6 +671,8 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
               ],
             ),
           ),
+
+          // Mô tả khóa học (GIỮ NGUYÊN)
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Text(
@@ -268,6 +684,8 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(lopHoc?['moTa'] ?? "Không có mô tả"),
           ),
+
+          // DANH SÁCH BÀI HỌC (GIỮ NGUYÊN BỐ CỤC)
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
             child: Text(
@@ -278,111 +696,165 @@ class _ChiTietLopHocHVScreenState extends State<ChiTietLopHocHVScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              "Tổng bài học: ${baiHocs.length}",
+              "Tổng bài học: ${_totalBaiHoc()}",
               style: const TextStyle(color: Colors.blue),
             ),
           ),
 
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: baiHocs.length,
-            itemBuilder: (context, index) {
-              final b = baiHocs[index];
-
-              final hasVideo = b['videoUrl'] != null && b['videoUrl'] != "";
-              final status = b['trangThai'] ?? "chua_hoc";
-
-              Color statusColor;
-              String statusText;
-
-              switch (status) {
-                case "hoan_thanh":
-                  statusColor = Colors.green;
-                  statusText = "Đã học";
-                  break;
-                case "dang_hoc":
-                  statusColor = Colors.orange;
-                  statusText = "Đang học";
-                  break;
-                default:
-                  statusColor = Colors.grey;
-                  statusText = "Chưa học";
-              }
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          // ===== HIỂN THỊ THEO CHƯƠNG =====
+          if (hasChuong) ...[
+            for (var chuong in chuongs) ...[
+              const SizedBox(height: 8),
+              // Tên chương (GIỮ PHONG CÁCH GIỐNG CŨ)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  "Chương: ${chuong['tenChuong'] ?? 'Chương'}",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.purple,
+                  ),
                 ),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: hasVideo
-                        ? Colors.blue.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
-                    child: Icon(
-                      hasVideo ? Icons.play_circle : Icons.description,
-                      color: hasVideo ? Colors.blue : Colors.orange,
-                    ),
-                  ),
-                  title: Text(
-                    b['tenBaiHoc'] ?? "",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Thứ tự: ${b['thuTu'] ?? index + 1}"),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          statusText,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.comment, color: Colors.blue),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  Commentsscreen(idBaiHoc: b['idBaiHoc']),
-                            ),
-                          );
-                        },
-                        tooltip: 'Bình luận',
-                      ),
-                      const Icon(Icons.arrow_forward_ios, size: 16),
-                    ],
-                  ),
-                  onTap: () {
-                    openHocBaiScreen(b);
-                  },
+              ),
+              // Danh sách bài học trong chương
+              ..._buildBaiHocList(chuong['baiHocs'] ?? []),
+            ],
+          ],
+
+          // Bài học không có chương
+          if (hasBaiKhongChuong) ...[
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                "Bài học không chương",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.grey,
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+            ..._buildBaiHocList(baiHocKhongChuong),
+          ],
+
+          if (!hasChuong && !hasBaiKhongChuong)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(
+                child: Text(
+                  "Chưa có bài học nào",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ),
+
           const SizedBox(height: 20),
         ],
       ),
     );
+  }
+
+  // ===== HÀM TẠO DANH SÁCH BÀI HỌC (GIỮ NGUYÊN GIAO DIỆN CŨ) =====
+  List<Widget> _buildBaiHocList(List<dynamic> baiHocs) {
+    List<Widget> widgets = [];
+
+    for (var i = 0; i < baiHocs.length; i++) {
+      final b = baiHocs[i] as Map<String, dynamic>;
+
+      final hasVideo = b['videoUrl'] != null && b['videoUrl'] != "";
+      final status = b['trangThai'] ?? "chua_hoc";
+
+      Color statusColor;
+      String statusText;
+
+      switch (status) {
+        case "hoan_thanh":
+          statusColor = Colors.green;
+          statusText = "Đã học";
+          break;
+        case "dang_hoc":
+          statusColor = Colors.orange;
+          statusText = "Đang học";
+          break;
+        default:
+          statusColor = Colors.grey;
+          statusText = "Chưa học";
+      }
+
+      widgets.add(
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: hasVideo
+                  ? Colors.blue.withOpacity(0.1)
+                  : Colors.orange.withOpacity(0.1),
+              child: Icon(
+                hasVideo ? Icons.play_circle : Icons.description,
+                color: hasVideo ? Colors.blue : Colors.orange,
+              ),
+            ),
+            title: Text(
+              b['tenBaiHoc'] ?? "",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Thứ tự: ${b['thuTu'] ?? i + 1}"),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.comment, color: Colors.blue),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            Commentsscreen(idBaiHoc: b['idBaiHoc']),
+                      ),
+                    );
+                  },
+                  tooltip: 'Bình luận',
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 16),
+              ],
+            ),
+            onTap: () {
+              openHocBaiScreen(b);
+            },
+          ),
+        ),
+      );
+    }
+
+    return widgets;
   }
 }

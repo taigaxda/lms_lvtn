@@ -263,10 +263,22 @@ router.get('/:id', checkGiangVien, async (req, res) => {
         nguoidung: {
           select: {
             hoTen: true
-          },
+          }
         },
+        chuong: {                   
+          include: {
+            _count: {
+              select: {
+                baihoc: true      
+              }
+            }
+          },
+          orderBy: {
+            thuTu: 'asc'          
+          }
+        }
       }
-    })
+    });
     if (!lopHoc) {
       return res.status(404).json({
         success: false,

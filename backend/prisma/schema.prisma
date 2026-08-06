@@ -50,6 +50,7 @@ model khoahoc {
 
   nguoidung      nguoidung?       @relation(fields: [idGiangVien], references: [idNguoiDung])
   baihoc         baihoc[]
+  chuong         chuong[]  
   dangky_khoahoc dangky_khoahoc[]
   quizzes        quizzes[]
   assignments    assignments[]
@@ -74,16 +75,19 @@ model dangky_khoahoc {
 model baihoc {
   idBaiHoc   Int     @id @default(autoincrement())
   idKhoaHoc  Int
+  idChuong   Int?  
   tenBaiHoc  String
   videoUrl   String?
   taiLieuUrl String?
   thuTu      Int?
 
   khoahoc khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  chuong  chuong? @relation(fields: [idChuong], references: [idChuong], onDelete: SetNull)
   progress progress[]
   comments comments[]
 
   @@index([idKhoaHoc])
+  @@index([idChuong])
 }
 
 model comments {
@@ -329,4 +333,17 @@ model discussion_participants {
   nguoidung  nguoidung         @relation(fields: [idNguoiDung], references: [idNguoiDung], onDelete: Cascade)
 
   @@unique([idTopic, idNguoiDung])
+}
+
+model chuong {
+  idChuong   Int     @id @default(autoincrement())
+  idKhoaHoc  Int
+  tenChuong  String
+  thuTu      Int?
+
+  khoahoc    khoahoc @relation(fields: [idKhoaHoc], references: [idKhoaHoc], onDelete: Cascade)
+  baihoc     baihoc[]
+
+  @@unique([idKhoaHoc, thuTu])
+  @@index([idKhoaHoc])
 }
