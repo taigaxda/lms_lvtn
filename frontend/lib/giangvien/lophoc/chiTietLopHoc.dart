@@ -639,9 +639,7 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => Addbaihocscreen(
-          idKhoaHoc: widget.idKhoaHoc
-        ),
+        builder: (_) => Addbaihocscreen(idKhoaHoc: widget.idKhoaHoc),
       ),
     );
     if (result == true) loadAllData();
@@ -873,7 +871,6 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     );
   }
 
-
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -950,7 +947,6 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
     );
   }
 
-
   Widget _buildChuongHeader() {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -987,8 +983,6 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
       ),
     );
   }
-
-  
 
   Widget _buildChuongItem(Map<String, dynamic> chuong) {
     final baiHocs = chuong['baiHocs'] is List
@@ -1148,7 +1142,9 @@ class _ChiTietLopHocScreen extends State<ChiTietLopHocScreen> {
                 );
                 break;
               case 'edit':
-                openEditBaiHoc(b);
+                final baiHocFull = {...b, "idChuong": idChuong};
+
+                openEditBaiHoc(baiHocFull);
                 break;
               case 'delete':
                 confirmDeleteBaiHoc(b['idBaiHoc']);
