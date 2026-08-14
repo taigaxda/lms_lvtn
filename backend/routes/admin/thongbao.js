@@ -168,7 +168,7 @@ router.post('/', checkAdmin, async (req, res) => {
                 noiDung: noiDung,
                 tieuDe: tieuDe,
                 loaiThongBao: 'thong_bao',
-                ngayTao: new Date()
+                ngayTao: new Date(Date.now() + 7 * 60 * 60 * 1000)
             },
             include: {
                 nguoiDang: {
@@ -322,7 +322,7 @@ router.put('/:idThongBao', checkAdmin, async (req, res) => {
                 idKhoaHoc: idKhoaHocFinal,
                 noiDung: noiDung ?? tonTaiThongBao.noiDung,
                 tieuDe: tieuDe ?? tonTaiThongBao.tieuDe,
-                ngayTao: new Date()
+                ngayTao: new Date(Date.now() + 7 * 60 * 60 * 1000)
             }
         })
         const kieuTB = updatedthongBao.idKhoaHoc === null ? "hệ thống" : "lớp học"

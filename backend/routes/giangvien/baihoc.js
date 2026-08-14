@@ -237,7 +237,7 @@ router.post('/', checkGiangVien, async (req, res) => {
                     tieuDe: tieuDePush,
                     noiDung: noiDungPush,
                     loaiThongBao: "bai_hoc",
-                    ngayTao: new Date()
+                    ngayTao: new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
                 }
             });
             const dsHocVien = await prisma.dangky_khoahoc.findMany({

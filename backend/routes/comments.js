@@ -181,7 +181,7 @@ router.post('/', checkComment, async (req, res) => {
                 idBaiHoc: parseInt(idBaiHoc),
                 idNguoiDung: idNguoiDung,
                 noiDung: noiDung.trim(),
-                ngayTao: new Date()
+                ngayTao: new Date(Date.now() + 7 * 60 * 60 * 1000)
             },
             include: {
                 nguoidung: {
@@ -240,7 +240,7 @@ router.post('/reply', checkComment, async (req, res) => {
                 idNguoiDung: idNguoiDung,
                 noiDung: noiDung.trim(),
                 parentId: parseInt(idComment),
-                ngayTao: new Date()
+                ngayTao: new Date(Date.now() + 7 * 60 * 60 * 1000)
             },
             include: {
                 nguoidung: {
@@ -328,7 +328,8 @@ router.put('/:idComment', checkComment, async (req, res) => {
                 idComment: idComment
             },
             data: {
-                noiDung: noiDung.trim()
+                noiDung: noiDung.trim(),
+                ngayTao: new Date(Date.now() + 7 * 60 * 60 * 1000)
             },
             include: {
                 nguoidung: {

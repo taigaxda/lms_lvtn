@@ -18,7 +18,7 @@ const upload = multer({ dest: uploadDir });
 router.get('/chuanop', checkHocVien, async (req, res) => {
     try {
         const idNguoiDung = req.user.idNguoiDung;
-        const now = new Date()
+        const now = new Date(Date.now() + 7 * 60 * 60 * 1000)
         const dsLopHoc = await prisma.khoahoc.findMany({
             where: {
                 dangky_khoahoc: {
@@ -176,7 +176,7 @@ router.post('/:idAssignment/nopbai', checkHocVien, upload.single('fileNop'), asy
                 message: "Bài tập không còn tồn tại"
             })
         }
-        if (baiTap.hanNop && new Date() > baiTap.hanNop) {
+        if (baiTap.hanNop && new Date(Date.now() + 7 * 60 * 60 * 1000) > baiTap.hanNop) {
             return res.status(400).json({
                 success: false,
                 message: "Đã quá hạn nộp bài"
@@ -204,14 +204,14 @@ router.post('/:idAssignment/nopbai', checkHocVien, upload.single('fileNop'), asy
             update: {
                 fileNop: fileUrl ?? baiNopCu?.fileNop,
                 noiDung: noiDung ?? baiNopCu?.noiDung,
-                ngayNop: new Date()
+                ngayNop: new Date(Date.now() + 7 * 60 * 60 * 1000)
             },
             create: {
                 idAssignment,
                 idNguoiDung,
                 fileNop: fileUrl,
                 noiDung: noiDung,
-                ngayNop: new Date()
+                ngayNop: new Date(Date.now() + 7 * 60 * 60 * 1000)
             }
         })
         return res.status(200).json({

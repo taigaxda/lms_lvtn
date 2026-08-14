@@ -209,7 +209,8 @@ router.post('/:idKhoaHoc',checkGiangVien,upload.single('fileDinhKem'), async (re
                 tieuDe,
                 moTa,
                 fileDinhKem: fileUrl,
-                hanNop: new Date(hanNop)
+                hanNop: new Date(new Date(hanNop).getTime() + 7 * 60 * 60 * 1000),
+                ngayTao: new Date(Date.now() + 7 * 60 * 60 * 1000)
             }
         })
         try{
@@ -223,7 +224,7 @@ router.post('/:idKhoaHoc',checkGiangVien,upload.single('fileDinhKem'), async (re
                     tieuDe: tieuDePush,
                     noiDung: noiDungPush,
                     loaiThongBao: "bai_tap",
-                    ngayTao: new Date()
+                    ngayTao: new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
                 }
             });
             const dsHocVien = await prisma.dangky_khoahoc.findMany({
@@ -472,13 +473,13 @@ router.post('/chamdiem/:idSubmission',checkGiangVien,async(req,res)=>{
             update:{
                 diem: diem,
                 nhanXet: nhanXet,
-                ngayCham: new Date()
+                ngayCham: new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
             },
             create:{
                 idSubmission: idSubmission,
                 diem: diem,
                 nhanXet: nhanXet,
-                ngayCham: new Date()
+                ngayCham: new Date(new Date().getTime() + 7 * 60 * 60 * 1000)
             }
         })
         return res.status(200).json({

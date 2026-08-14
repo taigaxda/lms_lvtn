@@ -142,16 +142,158 @@ router.get('/diemhv/:idQuiz', checkGiangVien, async (req, res) => {
         });
     }
 })
+// router.post('/', checkGiangVien, async (req, res) => {
+//     try {
+//         let { tenQuiz, thoiGianLamBai, ngayDenHan, idKhoaHoc } = req.body;
+//         tenQuiz = tenQuiz?.trim();
+//         if (!tenQuiz || !idKhoaHoc) {
+//             return res.status(400).json({
+//                 success: false,
+//                 error: "Thiếu thông tin"
+//             });
+//         }
+//         if (thoiGianLamBai !== undefined) {
+//             if (isNaN(thoiGianLamBai)) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     error: "Thời gian phải là số"
+//                 });
+//             }
+//             thoiGianLamBai = parseInt(thoiGianLamBai);
+//         }
+//         let parsedNgayDenHan = null;
+//         if (ngayDenHan && ngayDenHan !== "") {
+//             const deadline = new Date(ngayDenHan);
+//             const now = new Date();
+
+//             if (isNaN(deadline.getTime())) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     error: "Ngày đến hạn không hợp lệ"
+//                 });
+//             }
+
+//             if (deadline <= now) {
+//                 return res.status(400).json({
+//                     success: false,
+//                     error: "Ngày đến hạn phải lớn hơn hiện tại"
+//                 });
+//             }
+
+//             parsedNgayDenHan = deadline;
+//         }
+//         const idGiangVien = req.user.idNguoiDung;
+//         const lophoc = await prisma.khoahoc.findFirst({
+//             where: {
+//                 idKhoaHoc,
+//                 idGiangVien
+//             }
+//         });
+//         if (!lophoc) {
+//             return res.status(403).json({
+//                 success: false,
+//                 error: "Bạn không có quyền"
+//             });
+//         }
+//         const quiz = await prisma.quizzes.create({
+//             data: {
+//                 tenQuiz,
+//                 thoiGianLamBai,
+//                 ngayDenHan: parsedNgayDenHan,
+//                 idKhoaHoc
+//             }
+//         });
+//         const idKhoaHocInt = parseInt(idKhoaHoc);
+//         try {
+//             const tieuDePush = "Bài kiểm tra mới!";
+//             const hanNopText = parsedNgayDenHan ? ` Hạn chót: ${new Date(parsedNgayDenHan).toLocaleDateString('vi-VN')}` : '';
+//             const noiDungPush = `Lớp có bài trắc nghiệm mới: "${tenQuiz}".${hanNopText}`;
+//             const thongBao = await prisma.announcements.create({
+//                 data: {
+//                     idKhoaHoc: idKhoaHocInt,
+//                     idNguoiDang: idGiangVien,
+//                     tieuDe: tieuDePush,
+//                     noiDung: noiDungPush,
+//                     loaiThongBao: 'quiz',
+//                     ngayTao: new Date(Date.now() + 7 * 60 * 60 * 1000)
+//                 }
+//             })
+//             const dsHocVien = await prisma.dangky_khoahoc.findMany({
+//                 where: {
+//                     idKhoaHoc: idKhoaHocInt
+//                 },
+//                 include: {
+//                     nguoidung: {
+//                         include: {
+//                             fcm_tokens: true
+//                         }
+//                     }
+//                 }
+//             })
+//             const tokensDich = []
+//             for (let i = 0; i < dsHocVien.length; i++) {
+//                 const hv = dsHocVien[i].nguoidung
+//                 if (hv && Array.isArray(hv.fcm_tokens)) {
+//                     for (let j = 0; j < hv.fcm_tokens.length; j++) {
+//                         if (hv.fcm_tokens[j]?.token) {
+//                             tokensDich.push(hv.fcm_tokens[j].token)
+//                         }
+//                     }
+//                 }
+//             }
+//             if (tokensDich.length > 0) {
+//                 const oneSignalPayload = {
+//                     app_id: process.env.ONESIGNAL_APP_ID,
+//                     include_subscription_ids: tokensDich,
+//                     target_channel: "push",
+//                     headings: {
+//                         en: tieuDePush
+//                     },
+//                     contents: {
+//                         en: noiDungPush
+//                     },
+//                     data: {
+//                         idKhoaHoc: idKhoaHocInt,
+//                         idThongBao: thongBao.idThongBao,
+//                         idQuiz: quiz.idQuiz,
+//                         loai: "quiz_moi"
+//                     }
+//                 }
+//                 axios.post('https://api.onesignal.com/notifications', oneSignalPayload, {
+//                     headers: {
+//                         'Content-Type': 'application/json; charset=utf-8',
+//                         'Authorization': `Key ${process.env.ONESIGNAL_REST_API_KEY}`
+//                     }
+//                 }).catch(err => {
+//                     console.error("Lỗi gọi API OneSignal khi tạo Quiz:", err.response?.data || err.message)
+//                 })
+//             }
+//         } catch (pushError) {
+//             console.error("Lỗi xử lý lưu bảng tin / bắn thông báo Quiz ngầm:", pushError.message);
+//         }
+//         res.json({
+//             success: true,
+//             data: quiz
+//         });
+//     } catch (err) {
+//         res.status(500).json({
+//             error: err.message
+//         });
+//     }
+// })
+
 router.post('/', checkGiangVien, async (req, res) => {
     try {
         let { tenQuiz, thoiGianLamBai, ngayDenHan, idKhoaHoc } = req.body;
         tenQuiz = tenQuiz?.trim();
+
         if (!tenQuiz || !idKhoaHoc) {
             return res.status(400).json({
                 success: false,
                 error: "Thiếu thông tin"
             });
         }
+
         if (thoiGianLamBai !== undefined) {
             if (isNaN(thoiGianLamBai)) {
                 return res.status(400).json({
@@ -161,53 +303,67 @@ router.post('/', checkGiangVien, async (req, res) => {
             }
             thoiGianLamBai = parseInt(thoiGianLamBai);
         }
+
         let parsedNgayDenHan = null;
         if (ngayDenHan && ngayDenHan !== "") {
-            const deadline = new Date(ngayDenHan);
-            const now = new Date();
+            // 1. Quy đổi thời gian FE gửi thành timestamp chuẩn
+            const deadlineTime = new Date(ngayDenHan).getTime();
+            const nowTime = Date.now();
 
-            if (isNaN(deadline.getTime())) {
+            if (isNaN(deadlineTime)) {
                 return res.status(400).json({
                     success: false,
                     error: "Ngày đến hạn không hợp lệ"
                 });
             }
 
-            if (deadline <= now) {
+            // 2. So sánh Timestamp chuẩn xác (không lo bị lệch múi giờ)
+            if (deadlineTime <= nowTime) {
                 return res.status(400).json({
                     success: false,
                     error: "Ngày đến hạn phải lớn hơn hiện tại"
                 });
             }
 
-            parsedNgayDenHan = deadline;
+            // 3. Ép kiểu về chuỗi Giờ Việt Nam chuẩn (cắt chữ 'Z') để lưu DB không bị mất 7 tiếng
+            parsedNgayDenHan = new Date(deadlineTime + 7 * 60 * 60 * 1000)
         }
+
         const idGiangVien = req.user.idNguoiDung;
         const lophoc = await prisma.khoahoc.findFirst({
             where: {
-                idKhoaHoc,
+                idKhoaHoc: parseInt(idKhoaHoc),
                 idGiangVien
             }
         });
+
         if (!lophoc) {
             return res.status(403).json({
                 success: false,
                 error: "Bạn không có quyền"
             });
         }
+
+        // Tạo Quiz với parsedNgayDenHan đã chuẩn hóa chuỗi giờ VN
         const quiz = await prisma.quizzes.create({
             data: {
                 tenQuiz,
                 thoiGianLamBai,
                 ngayDenHan: parsedNgayDenHan,
-                idKhoaHoc
+                idKhoaHoc: parseInt(idKhoaHoc)
             }
         });
+
         const idKhoaHocInt = parseInt(idKhoaHoc);
+
         try {
+            // Tính ngayTao theo giờ Việt Nam
+            const ngayTaoVN = new Date(Date.now() + 7 * 60 * 60 * 1000);
+            
             const tieuDePush = "Bài kiểm tra mới!";
-            const hanNopText = parsedNgayDenHan ? ` Hạn chót: ${new Date(parsedNgayDenHan).toLocaleDateString('vi-VN')}` : '';
+            const hanNopText = parsedNgayDenHan ? ` Hạn chót: ${new Date(ngayDenHan).toLocaleDateString('vi-VN')}` : '';
             const noiDungPush = `Lớp có bài trắc nghiệm mới: "${tenQuiz}".${hanNopText}`;
+
             const thongBao = await prisma.announcements.create({
                 data: {
                     idKhoaHoc: idKhoaHocInt,
@@ -215,9 +371,10 @@ router.post('/', checkGiangVien, async (req, res) => {
                     tieuDe: tieuDePush,
                     noiDung: noiDungPush,
                     loaiThongBao: 'quiz',
-                    ngayTao: new Date()
+                    ngayTao: ngayTaoVN // <-- Sử dụng ngayTaoVN
                 }
-            })
+            });
+
             const dsHocVien = await prisma.dangky_khoahoc.findMany({
                 where: {
                     idKhoaHoc: idKhoaHocInt
@@ -229,18 +386,20 @@ router.post('/', checkGiangVien, async (req, res) => {
                         }
                     }
                 }
-            })
-            const tokensDich = []
+            });
+
+            const tokensDich = [];
             for (let i = 0; i < dsHocVien.length; i++) {
-                const hv = dsHocVien[i].nguoidung
+                const hv = dsHocVien[i].nguoidung;
                 if (hv && Array.isArray(hv.fcm_tokens)) {
                     for (let j = 0; j < hv.fcm_tokens.length; j++) {
                         if (hv.fcm_tokens[j]?.token) {
-                            tokensDich.push(hv.fcm_tokens[j].token)
+                            tokensDich.push(hv.fcm_tokens[j].token);
                         }
                     }
                 }
             }
+
             if (tokensDich.length > 0) {
                 const oneSignalPayload = {
                     app_id: process.env.ONESIGNAL_APP_ID,
@@ -258,29 +417,31 @@ router.post('/', checkGiangVien, async (req, res) => {
                         idQuiz: quiz.idQuiz,
                         loai: "quiz_moi"
                     }
-                }
+                };
+
                 axios.post('https://api.onesignal.com/notifications', oneSignalPayload, {
                     headers: {
                         'Content-Type': 'application/json; charset=utf-8',
                         'Authorization': `Key ${process.env.ONESIGNAL_REST_API_KEY}`
                     }
                 }).catch(err => {
-                    console.error("Lỗi gọi API OneSignal khi tạo Quiz:", err.response?.data || err.message)
-                })
+                    console.error("Lỗi gọi API OneSignal khi tạo Quiz:", err.response?.data || err.message);
+                });
             }
         } catch (pushError) {
             console.error("Lỗi xử lý lưu bảng tin / bắn thông báo Quiz ngầm:", pushError.message);
         }
-        res.json({
+
+        return res.json({
             success: true,
             data: quiz
         });
     } catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             error: err.message
         });
     }
-})
+});
 
 router.post('/:idQuiz/cauhoi', checkGiangVien, async (req, res) => {
     try {

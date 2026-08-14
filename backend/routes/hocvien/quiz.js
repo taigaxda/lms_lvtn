@@ -284,12 +284,12 @@ router.post('/:idQuiz/nopbai', checkHocVien, async (req, res) => {
             });
         }
         
-        if (quiz.ngayDenHan && new Date() > new Date(quiz.ngayDenHan)) {
-            return res.status(400).json({
-                success: false,
-                message: "Đã quá hạn nộp bài"
-            });
-        }
+        // if (quiz.ngayDenHan && new Date() > new Date(quiz.ngayDenHan)) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Đã quá hạn nộp bài"
+        //     });
+        // }
 
         let tongDiem = 0;
         let answerMap = {};
