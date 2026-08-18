@@ -14,8 +14,13 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const upload = multer({ dest: uploadDir });
-
+// const upload = multer({ dest: uploadDir });
+const upload = multer({
+    dest: uploadDir,
+    limits: {
+        fileSize: 500 * 1024 * 1024
+    }
+});
 router.get('/:idKhoaHoc', checkGiangVien, async (req, res) => {
     try {
         const idKhoaHoc = parseInt(req.params.idKhoaHoc)

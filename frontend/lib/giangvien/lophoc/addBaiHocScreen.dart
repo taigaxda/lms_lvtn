@@ -446,19 +446,28 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
       http.Response res;
       int idBaiHoc;
 
-      int finalThuTu;
-      if (isEdit && thuTuController.text.trim().isEmpty) {
-        finalThuTu = widget.baiHoc!['thuTu'] ?? 1;
-      } else {
-        finalThuTu = int.tryParse(thuTuController.text) ?? 1;
-      }
+      // int finalThuTu;
+      // if (isEdit && thuTuController.text.trim().isEmpty) {
+      //   finalThuTu = widget.baiHoc!['thuTu'] ?? 1;
+      // } else {
+      //   finalThuTu = int.tryParse(thuTuController.text) ?? 1;
+      // }
 
+      // final body = {
+      //   "idKhoaHoc": widget.idKhoaHoc,
+      //   "tenBaiHoc": tenController.text.trim(),
+      //   "thuTu": finalThuTu,
+      //   "idChuong": selectedChuongId,
+      // };
       final body = {
         "idKhoaHoc": widget.idKhoaHoc,
         "tenBaiHoc": tenController.text.trim(),
-        "thuTu": finalThuTu,
         "idChuong": selectedChuongId,
       };
+
+      if (thuTuController.text.trim().isNotEmpty) {
+        body["thuTu"] = int.parse(thuTuController.text.trim());
+      }
 
       print('Request body: ${jsonEncode(body)}');
 
@@ -479,11 +488,20 @@ class _Addbaihocscreen extends State<Addbaihocscreen> {
       } else {
         idBaiHoc = widget.baiHoc!['idBaiHoc'];
         
+        // final updateBody = {
+        //   "tenBaiHoc": tenController.text.trim(),
+        //   "thuTu": finalThuTu,
+        //   "idChuong": selectedChuongId,
+        // };
+
         final updateBody = {
-          "tenBaiHoc": tenController.text.trim(),
-          "thuTu": finalThuTu,
-          "idChuong": selectedChuongId,
-        };
+  "tenBaiHoc": tenController.text.trim(),
+  "idChuong": selectedChuongId,
+};
+
+if (thuTuController.text.trim().isNotEmpty) {
+  updateBody["thuTu"] = int.parse(thuTuController.text.trim());
+}
         
         print('Update body: ${jsonEncode(updateBody)}');
         
