@@ -285,10 +285,10 @@ class _HocBaiScreenState extends State<HocBaiScreen> {
                           style: const TextStyle(fontSize: 14),
                         ),
                         ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async{
                             _stopTracking();
                             if (!isVideo && !daBaoHoanThanh) {
-                              _callHocBai("hoan_thanh", 0);
+                              await _callHocBai("hoan_thanh", 0);
                               setState(() {
                                 daBaoHoanThanh = true;
                               });
