@@ -16,20 +16,20 @@ Các chức năng chính:
 Mô hình xây dựng: Client-Server
 
 Công nghệ sử dụng: 
-Frontend:
-  -Flutter Framework
-  -Dart
-Backend: 
-  -NodeJS + Express Framework
-  -Prisma ORM
-  -Bcrypt
-  -SocketIO
-Database và các dịch vụ thứ 3:
-  -PostgreSQL
-  -Cloudinary
-  -Render Platform
-  -Brevo
-  -OneSignal
-  -OpenRouter
+  -Frontend:
+    +Flutter Framework
+    +Dart
+  -Backend: 
+    +NodeJS + Express Framework
+    +Prisma ORM
+    +Bcrypt
+    +SocketIO
+  -Database và các dịch vụ thứ 3:
+    +PostgreSQL
+    +Cloudinary
+    +Render Platform
+    +Brevo
+    +OneSignal
+    +OpenRouter
 
   Link apk: https://drive.google.com/file/d/1Xr8QfDL0WVzYrJOYLl6PS6AnPvAohRVc/view?usp=sharing
