@@ -11,6 +11,8 @@ Các chức năng chính:
   -Tướng tác:
     +Nhắn tin, trao đổi thông tin, tài liệu tông qua các nhóm chat trong lớp cũng như các bình luận dưới bài học
 
+Mô hình xây dựng: Client-Server
+
 Công nghệ sử dụng: 
 Frontend:
   -Flutter Framework
