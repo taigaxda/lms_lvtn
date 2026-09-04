@@ -1,0 +1,31 @@
+Tên dự án: App mobile quản lý học tập cơ bản cho giáo viên và học viên
+Mô tả: Ứng dụng giúp giáo viên có thể quản lý tiến độ học tập của học viên thông qua các bài học, bài tập, bài kiểm tra qua môi trường Internet mà không cần gặp mặt trược tiếp
+Các chức năng chính:
+  -Quản lý học tập bao gồm việc:
+    +Giao bài tập, bài học, bài kiểm tra
+    +Chấm điểm và preview bài tập học viên
+    +Xem tiến độ học tập của học trong lớp
+    +Học viên làm bài tập, học bài và làm bài kiểm tra
+  -Quản lý thông báo:
+    +Giúp các thành viên trong lớp nhận được các thông báo quan trọng cũng như học tập
+  -Tướng tác:
+    +Nhắn tin, trao đổi thông tin, tài liệu tông qua các nhóm chat trong lớp cũng như các bình luận dưới bài học
+
+Công nghệ sử dụng: 
+Frontend:
+  -Flutter Framework
+  -Dart
+Backend: 
+  -NodeJS + Express Framework
+  -Prisma ORM
+  -Bcrypt
+  -SocketIO
+Database và các dịch vụ thứ 3:
+  -PostgreSQL
+  -Cloudinary
+  -Render Platform
+  -Brevo
+  -OneSignal
+  -OpenRouter
+
+  Link apk: https://drive.google.com/file/d/1Xr8QfDL0WVzYrJOYLl6PS6AnPvAohRVc/view?usp=sharing
