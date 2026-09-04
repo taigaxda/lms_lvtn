@@ -1,5 +1,7 @@
 Tên dự án: App mobile quản lý học tập cơ bản cho giáo viên và học viên
-Mô tả: Ứng dụng giúp giáo viên có thể quản lý tiến độ học tập của học viên thông qua các bài học, bài tập, bài kiểm tra qua môi trường Internet mà không cần gặp mặt trược tiếp
+
+Mô tả: Ứng dụng giúp giáo viên có thể quản lý tiến độ học tập của học viên thông qua các bài học, bài tập, bài kiểm tra qua môi trường Internet mà không cần gặp mặt trực tiếp
+
 Các chức năng chính:
   -Quản lý học tập bao gồm việc:
     +Giao bài tập, bài học, bài kiểm tra
